@@ -1,0 +1,10 @@
+*.pyc
+*.swp
+.Python
+client_data
+
+lib
+src
+bin
+include
+share
