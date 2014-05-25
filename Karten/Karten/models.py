@@ -1,14 +1,17 @@
 from django.conf import settings
 from django.db import models
+from django.utils.translation import ugettext as _
 import facebook
+from jsonpickle.pickler import Pickler
 import jsonpickle
+import couchdb
 from Karten.errors import *
+from Karten.settings import COUCHDB_SERVERS
+from Karten.json_utils import *
 
 def couchdb_instance():
-    COUCHDB_URL = "http://192.168.0.233:5984"
-    instance = couchdb.Server(url=COUCHDB_URL)
+    instance = couchdb.Server(url=COUCHDB_SERVERS['Karten'])
     return instance
-
 
 class KartenUser(models.Model):
 
@@ -24,9 +27,6 @@ class KartenUser(models.Model):
         self.first_name = fb_object['first_name']
         self.last_name = fb_object['last_name']
 
-    def to_json(self):
-        return jsonpickle.encode(self, unpicklable=False)
-
     def friends_to_json(self):
         friends = self.friends.all()
         return jsonpickle.encode(friends, unpicklable=False)
@@ -37,6 +37,8 @@ class KartenUser(models.Model):
         for key in filtered_keys:
             self.__setattr__(key, json[key])
 
+    def to_json(self):
+        return jsonpickle.encode(to_json(self), unpicklable=False)
 
     @classmethod
     def get_or_create(user_id):
@@ -47,28 +49,52 @@ class KartenUser(models.Model):
 
         return user
 
+class KartenCouchServer(models.Model):
+    server_url = models.URLField(max_length=255)
+
+    @classmethod
+    def server_for_app(self):
+        try:
+            server = KartenCouchServer.objects.get(server_url=COUCHDB_SERVERS['Karten'])
+        except KartenCouchServer.DoesNotExist:
+            server = KartenCouchServer(server_url=COUCHDB_SERVERS['Karten'])
+            server.save()
+
+        return server
+    def to_json(self):
+        return jsonpickle.encode(to_json(self), unpicklable=False)
     
-class KartenCouchDB(models.Model):
+class KartenDB(models.Model):
 
     couchdb_name = models.CharField(max_length=255)
-    admin = models.ForeignKey('KartenUser', related_name='admin_of', null=True) 
+    couchdb_server = models.ForeignKey('KartenCouchServer', related_name='databases')
+    owner = models.ForeignKey('KartenUser', related_name='admin_of', null=True) 
     name = models.CharField(max_length=100)
     description = models.CharField(max_length=255, null=True, blank=True)
-    allowed_users = models.ForeignKey('KartenUser', related_name='databases', null=True)
+    allowed_users = models.ManyToManyField('KartenUser', related_name='databases')
 
-    def save(self):
-        if self.couchdb_name is None:
+    def save(self, *args, **kwargs):
+        #import pdb;pdb.set_trace()
+        if self.couchdb_name is None or len(self.couchdb_name) is 0:
             couchserver = couchdb_instance()
             try:
-                formatted_db_name = new_database.name.replace(" ", "_").lower()
+                formatted_db_name = self.name.replace(" ", "_").lower()
                 couchserver.create(formatted_db_name)
+                self.couchdb_name = formatted_db_name
+                self.couchdb_server = KartenCouchServer.server_for_app()
             except couchdb.PreconditionFailed:
-                mesg = _("Database with name '%(db_name)' already exists.\
-                        Please enter another name.") % {'db_name' : database_name}
+                m = "Database with name already exists. Please enter another name." % {'db_name' : self.name}
+                mesg = _(m)
 
-                e = KartenCouchDBException(message=_mesg, error_code="ErrorDatabaseExists")
+                e = KartenCouchDBException(message=mesg, error_code="ErrorDatabaseExists")
                 raise e
 
-        super(KartenCouchDB, self).save(*args, **kwargs)
+        super(KartenDB, self).save(*args, **kwargs)
 
+    def to_json(self):
+        return jsonpickle.encode(to_json(self), unpicklable=False)
+
+    @property
+    def couchdb_url(self):
+        return COUCHDB_SERVERS['Karten'] + self.couchdb_name
 

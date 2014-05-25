@@ -1,5 +1,6 @@
 from django.test import TestCase, Client
 from Karten.models import KartenUser
+from Karten.settings import *
 import json
 import string
 import random
@@ -73,4 +74,38 @@ class UserCreationTestCase(TestCase):
             response = self.client.get(url, update_dict)
             response_json = json.loads(response.content)
             self.assertEqual(new_value, response_json[key])
+
+
+class DatabaseTests(TestCase):
+
+    def setUp(self):
+        self.client = Client()
+        self.create_user()
+
+    def create_user(self):
+        user_dict = {'first_name' : "fnm" + rnd(), 
+                'last_name' : "lnm" + rnd(),
+                'external_service' : "exts" + rnd(),
+                'external_user_id' : "extid" + rnd()
+                }
+        response = self.client.get("/user/create", user_dict)
+        self.assertEqual(200, response.status_code)
+        self.user_info = json.loads(response.content)
+
+    def test_create_delete_database(self):
+        
+        database_data = {'name' : "test_" + rnd(), 
+            'description' : "test db", 
+            'owner' : self.user_info['id']}
+        response = self.client.get("/database/create", database_data)
+        new_db = json.loads(response.content)
+        self.assertEqual(new_db['name'], database_data['name'])
+        self.assertEqual(new_db['owner_id'], database_data['owner'])
+        self.assertEqual(new_db['description'], database_data['description'])
+
+        expected_db_url = COUCHDB_SERVERS['Karten'] + "/" + database_data['name']
+        self.assertEqual(expected_db_url, new_db['couchdb_server']['server_url'] + "/" + new_db['name']) 
+
+        json_response = json.loads(self.client.get("/database/%s/delete" % new_db['id']).content)
+        self.assertEqual(json_response['couchdb_name'], new_db['couchdb_name'])
 

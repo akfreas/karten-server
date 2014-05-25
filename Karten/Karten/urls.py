@@ -19,6 +19,7 @@ urlpatterns = patterns('Karten.views',
     url(r'^user/(?P<user_id>\w+)/friends/remove/(?P<friend_id>\w+)', 'remove_user_friend'),
 
     url(r'^database/create', 'create_database'),
+    url(r'^database/(?P<database_id>\w+)/delete', 'delete_database'),
     url(r'^database/(?P<database_id>\w+)/user/(?P<user_id>\w+)/add', 'add_user_to_database'),
     url(r'^database/(?P<database_id>\w+)/user/(?P<user_id>\w+)/delete', 'remove_user_from_database'),
     url(r'^database/(?P<database_id>\w+)/users/all', 'get_all_users_for_database'),

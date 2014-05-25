@@ -36,6 +36,20 @@ class KartenUserAlreadyExists(BaseException):
 class KartenUserDoesNotExist(BaseException):
     def __init__(self, user_id):
         self.user_id = user_id
+        self.error_code = "ErrorKartenUserDoesNotExist"
+        
+
+class KartenDBDoesNotExist(BaseException):
+    def __init__(self, db_id):
+        self.message = _("The database %s does not exist." % db_id)
+        self.db_id = db_id
+        self.error_code = "ErrorDatabaseDoesNotExist"
+
+class KartenDBException(BaseException):
+    def __init__(self, db_id="", message="", error_code=""):
+        self.message = message
+        self.error_code = error_code
+        self.db_id = db_id
 
 class KartenCouchDBException(BaseException):
     def __init__(self, message="", error_code="", database=""):

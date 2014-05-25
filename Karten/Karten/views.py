@@ -1,11 +1,13 @@
 from Karten.models import *
 from Karten.errors import *
+from Karten.json_utils import *
 
 from django.http import HttpResponseRedirect, HttpResponse
 
 
 import json
 import jsonpickle
+from jsonpickle.pickler import Pickler
 
 
 #couchdb utils
@@ -97,15 +99,27 @@ def create_database(request):
     
     params = request.GET
     user = KartenUser.objects.get(id=params['owner'])
-    post_json = json.loads(request.body)
-    new_database = KartenCouchDB(name=post_json['name'], 
-                                 description=post_json['description'], 
-                                 admin=user)
+    new_database = KartenDB(name=params['name'], 
+                                 description=params['description'], 
+                                 owner=user)
+    new_database.owner = user
+    new_database.save()
+    return HttpResponse(content=new_database.to_json(), content_type="application/json")
+   
+@add_request_context
+def delete_database(request, database_id):
+    params = request.GET
     try:
-        new_database.admin = user
-        new_database.save()
-    except Exception as e:
-        return e.http_response()
+        database = KartenDB.objects.get(id=database_id)
+    except KeyError:
+        exception = ErrorMessage(e.description, e.name)
+        return exception.http_response()
+    except KartenDB.DoesNotExist:
+        KartenDBException(params['id'])
+        return KartenDBException.http_response()
+
+    database.delete()
+    return HttpResponse(content=database.to_json(), content_type="appliction/json")
 
 @add_request_context
 def get_user_databases(request, user_id):
@@ -113,11 +127,63 @@ def get_user_databases(request, user_id):
     try:
         user = KartenUser.objects.get(id=user_id)
     except KartenUser.DoesNotExist:
-        exception = KartenUserDoesNotExist(user_id)
+        exception = KartenUserDoesNotExist(user_id, _("The database you requested does not exist."))
         return exception.http_response
 
     databases = user.databases.all()
     return HttpResponse(content=jsonpickle.encode(databases, unpicklable=False), mimetype="application/json")
     
-   
+@add_request_context
+def add_user_to_database(request, database_id, user_id):
+
+    try:
+        database = KartenDB.objects.get(id=database_id)
+    except KartenDB.DoesNotExist:
+        e = KartenDBDoesNotExist(database_id)
+        return e.http_response()
+
+    try:
+        user = KartenUser.objects.get(id=user_id)
+    except KartenUser.DoesNotExist:
+        e = KartenUserDoesNotExist(user_id)
+        return e.http_response()
+
+    database.allowed_users.add(user)
+    database.save()
+    return HttpResponse(content=database.to_json(), content_type="application/json")
+
+@add_request_context
+def remove_user_from_database(request, database_id, user_id):
+
+    try:
+        database = KartenDB.objects.get(id=database_id)
+    except KartenDB.DoesNotExist:
+        e = KartenDBDoesNotExist(database_id)
+        return e.http_response()
+
+    try:
+        user = KartenUser.objects.get(id=user_id)
+    except KartenUser.DoesNotExist:
+        e = KartenUserDoesNotExist(user_id)
+        return e.http_response()
+
+    database.allowed_users.remove(user)
+    database.save()
+    return HttpResponse(content=database.to_json(), content_type="application/json")
+
+@add_request_context
+def get_all_users_for_database(request, database_id):
+
+    try:
+        database = KartenDB.objects.get(id=database_id)
+    except KartenDB.DoesNotExist:
+        e = KartenDBDoesNotExist(database_id)
+        return e.http_response()
+    users = database.users.all()
+    json_dict = to_json(users)
+
+    return HttpResponse(pickler.encode(json_dict, unpicklable=False), content_type="application_json")
+
+
+
 
