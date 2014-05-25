@@ -39,13 +39,13 @@ class KartenUserDoesNotExist(BaseException):
         self.error_code = "ErrorKartenUserDoesNotExist"
         
 
-class KartenDBDoesNotExist(BaseException):
+class KartenStackDoesNotExist(BaseException):
     def __init__(self, db_id):
         self.message = _("The database %s does not exist." % db_id)
         self.db_id = db_id
         self.error_code = "ErrorDatabaseDoesNotExist"
 
-class KartenDBException(BaseException):
+class KartenStackException(BaseException):
     def __init__(self, db_id="", message="", error_code=""):
         self.message = message
         self.error_code = error_code

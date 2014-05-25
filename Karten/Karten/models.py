@@ -64,7 +64,7 @@ class KartenCouchServer(models.Model):
     def to_json(self):
         return jsonpickle.encode(to_json(self), unpicklable=False)
     
-class KartenDB(models.Model):
+class KartenStack(models.Model):
 
     couchdb_name = models.CharField(max_length=255)
     couchdb_server = models.ForeignKey('KartenCouchServer', related_name='databases')
@@ -81,7 +81,7 @@ class KartenDB(models.Model):
             e = KartenCouchDBException(message=_("The database you are trying to delete does not exist."),\
                     error_code="ErrorDatabaseDoesNotExist")
             raise e
-        super(KartenDB, self).delete(*args, **kwargs)
+        super(KartenStack, self).delete(*args, **kwargs)
 
     def save(self, *args, **kwargs):
         #import pdb;pdb.set_trace()
@@ -99,7 +99,7 @@ class KartenDB(models.Model):
                 e = KartenCouchDBException(message=mesg, error_code="ErrorDatabaseExists")
                 raise e
 
-        super(KartenDB, self).save(*args, **kwargs)
+        super(KartenStack, self).save(*args, **kwargs)
 
     def to_json(self):
         return jsonpickle.encode(to_json(self), unpicklable=False)

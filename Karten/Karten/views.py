@@ -95,51 +95,51 @@ def create_user_friend(request, user_id):
     
 
 @add_request_context
-def create_database(request):
+def create_stack(request):
     
     params = request.GET
     user = KartenUser.objects.get(id=params['owner'])
-    new_database = KartenDB(name=params['name'], 
+    new_stack = KartenStack(name=params['name'], 
                                  description=params['description'], 
                                  owner=user)
-    new_database.owner = user
-    new_database.save()
-    return HttpResponse(content=new_database.to_json(), content_type="application/json")
+    new_stack.owner = user
+    new_stack.save()
+    return HttpResponse(content=new_stack.to_json(), content_type="application/json")
    
 @add_request_context
-def delete_database(request, database_id):
+def delete_stack(request, stack_id):
     params = request.GET
     try:
-        database = KartenDB.objects.get(id=database_id)
+        stack = KartenStack.objects.get(id=stack_id)
     except KeyError:
         exception = ErrorMessage(e.description, e.name)
         return exception.http_response()
-    except KartenDB.DoesNotExist:
-        KartenDBException(params['id'])
-        return KartenDBException.http_response()
+    except KartenStack.DoesNotExist:
+        KartenStackException(params['id'])
+        return KartenStackException.http_response()
 
-    database.delete()
-    return HttpResponse(content=database.to_json(), content_type="appliction/json")
+    stack.delete()
+    return HttpResponse(content=stack.to_json(), content_type="appliction/json")
 
 @add_request_context
-def get_user_databases(request, user_id):
+def get_user_stacks(request, user_id):
 
     try:
         user = KartenUser.objects.get(id=user_id)
     except KartenUser.DoesNotExist:
-        exception = KartenUserDoesNotExist(user_id, _("The database you requested does not exist."))
+        exception = KartenUserDoesNotExist(user_id, _("The stack you requested does not exist."))
         return exception.http_response
 
-    databases = user.databases.all()
-    return HttpResponse(content=jsonpickle.encode(databases, unpicklable=False), mimetype="application/json")
+    stacks = user.stacks.all()
+    return HttpResponse(content=jsonpickle.encode(stacks, unpicklable=False), mimetype="application/json")
     
 @add_request_context
-def add_user_to_database(request, database_id, user_id):
+def add_user_to_stack(request, stack_id, user_id):
 
     try:
-        database = KartenDB.objects.get(id=database_id)
-    except KartenDB.DoesNotExist:
-        e = KartenDBDoesNotExist(database_id)
+        stack = KartenStack.objects.get(id=stack_id)
+    except KartenStack.DoesNotExist:
+        e = KartenStackDoesNotExist(stack_id)
         return e.http_response()
 
     try:
@@ -148,20 +148,20 @@ def add_user_to_database(request, database_id, user_id):
         e = KartenUserDoesNotExist(user_id)
         return e.http_response()
 
-    database.allowed_users.add(user)
-    database.save()
+    stack.allowed_users.add(user)
+    stack.save()
 
-    response_dict = to_json(database)
-    response_dict['allowed_users'] = to_json(database.allowed_users.all())
+    response_dict = to_json(stack)
+    response_dict['allowed_users'] = to_json(stack.allowed_users.all())
     return HttpResponse(content=jsonpickle.encode(response_dict, unpicklable=False), content_type="application/json")
 
 @add_request_context
-def remove_user_from_database(request, database_id, user_id):
+def remove_user_from_stack(request, stack_id, user_id):
 
     try:
-        database = KartenDB.objects.get(id=database_id)
-    except KartenDB.DoesNotExist:
-        e = KartenDBDoesNotExist(database_id)
+        stack = KartenStack.objects.get(id=stack_id)
+    except KartenStack.DoesNotExist:
+        e = KartenStackDoesNotExist(stack_id)
         return e.http_response()
 
     try:
@@ -170,21 +170,21 @@ def remove_user_from_database(request, database_id, user_id):
         e = KartenUserDoesNotExist(user_id)
         return e.http_response()
 
-    database.allowed_users.remove(user)
-    database.save()
-    response_dict = to_json(database)
-    response_dict['allowed_users'] = to_json(database.allowed_users.all())
+    stack.allowed_users.remove(user)
+    stack.save()
+    response_dict = to_json(stack)
+    response_dict['allowed_users'] = to_json(stack.allowed_users.all())
     return HttpResponse(content=jsonpickle.encode(response_dict, unpicklable=False), content_type="application/json")
 
 @add_request_context
-def get_all_users_for_database(request, database_id):
+def get_all_users_for_stack(request, stack_id):
 
     try:
-        database = KartenDB.objects.get(id=database_id)
-    except KartenDB.DoesNotExist:
-        e = KartenDBDoesNotExist(database_id)
+        stack = KartenStack.objects.get(id=stack_id)
+    except KartenStack.DoesNotExist:
+        e = KartenStackDoesNotExist(stack_id)
         return e.http_response()
-    users = database.users.all()
+    users = stack.users.all()
     json_dict = to_json(users)
 
     return HttpResponse(pickler.encode(json_dict, unpicklable=False), content_type="application_json")
