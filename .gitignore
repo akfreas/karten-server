@@ -2,7 +2,7 @@
 *.swp
 .Python
 client_data
-
+Karten/tests/json-outputs
 lib
 src
 bin
