@@ -14,6 +14,6 @@ def pre_delete_db(sender, instance, signal, *args, **kwargs):
         raise e
 
 
-pre_delete.connet(pre_delete_db, sender=KartenDB)
+pre_delete.connect(pre_delete_db, sender=KartenDB)
 
 

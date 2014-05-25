@@ -80,7 +80,7 @@ class DatabaseTests(TestCase):
 
     def setUp(self):
         self.client = Client()
-        self.create_user()
+        self.user_info = self.create_user()
 
     def create_user(self):
         user_dict = {'first_name' : "fnm" + rnd(), 
@@ -90,7 +90,8 @@ class DatabaseTests(TestCase):
                 }
         response = self.client.get("/user/create", user_dict)
         self.assertEqual(200, response.status_code)
-        self.user_info = json.loads(response.content)
+        return json.loads(response.content)
+
 
     def test_create_delete_database(self):
         
@@ -108,4 +109,34 @@ class DatabaseTests(TestCase):
 
         json_response = json.loads(self.client.get("/database/%s/delete" % new_db['id']).content)
         self.assertEqual(json_response['couchdb_name'], new_db['couchdb_name'])
+
+    def test_add_remove_user_to_database(self):
+        database_data = {'name' : "test_" + rnd(), 
+            'description' : "test db", 
+            'owner' : self.user_info['id']}
+        response = self.client.get("/database/create", database_data)
+        new_db = json.loads(response.content)
+        new_user = self.create_user()
+
+        add_user_response = json.loads(self.client.get("/database/%s/user/%s/add" % (new_db['id'], new_user['id'])).content)
+
+        test_val = False
+        for user in add_user_response['allowed_users']:
+            if user['id'] is new_user['id']:
+                test_val = True
+
+        self.assertTrue(test_val)
+        delete_user_response = json.loads(self.client.get("/database/%s/user/%s/delete" % (new_db['id'], new_user['id'])).content)
+
+        print delete_user_response
+        test_val = True
+        for user in delete_user_response['allowed_users']:
+            if user['id'] is new_user['id']:
+                test_val = False
+
+        self.assertTrue(test_val)
+
+        self.client.get("/database/%s/delete" % new_db['id'])
+
+
 

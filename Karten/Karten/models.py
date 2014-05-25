@@ -73,6 +73,16 @@ class KartenDB(models.Model):
     description = models.CharField(max_length=255, null=True, blank=True)
     allowed_users = models.ManyToManyField('KartenUser', related_name='databases')
 
+    def delete(self, *args, **kwargs):
+        try:
+            server = couchdb.Server(self.couchdb_server.server_url)
+            server.delete(self.couchdb_name)
+        except couchdb.ResourceNotFound:
+            e = KartenCouchDBException(message=_("The database you are trying to delete does not exist."),\
+                    error_code="ErrorDatabaseDoesNotExist")
+            raise e
+        super(KartenDB, self).delete(*args, **kwargs)
+
     def save(self, *args, **kwargs):
         #import pdb;pdb.set_trace()
         if self.couchdb_name is None or len(self.couchdb_name) is 0:

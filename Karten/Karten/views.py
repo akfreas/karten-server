@@ -150,7 +150,10 @@ def add_user_to_database(request, database_id, user_id):
 
     database.allowed_users.add(user)
     database.save()
-    return HttpResponse(content=database.to_json(), content_type="application/json")
+
+    response_dict = to_json(database)
+    response_dict['allowed_users'] = to_json(database.allowed_users.all())
+    return HttpResponse(content=jsonpickle.encode(response_dict, unpicklable=False), content_type="application/json")
 
 @add_request_context
 def remove_user_from_database(request, database_id, user_id):
@@ -169,7 +172,9 @@ def remove_user_from_database(request, database_id, user_id):
 
     database.allowed_users.remove(user)
     database.save()
-    return HttpResponse(content=database.to_json(), content_type="application/json")
+    response_dict = to_json(database)
+    response_dict['allowed_users'] = to_json(database.allowed_users.all())
+    return HttpResponse(content=jsonpickle.encode(response_dict, unpicklable=False), content_type="application/json")
 
 @add_request_context
 def get_all_users_for_database(request, database_id):
@@ -183,7 +188,5 @@ def get_all_users_for_database(request, database_id):
     json_dict = to_json(users)
 
     return HttpResponse(pickler.encode(json_dict, unpicklable=False), content_type="application_json")
-
-
 
 
