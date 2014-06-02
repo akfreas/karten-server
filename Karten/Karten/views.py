@@ -42,25 +42,27 @@ def all_users(request):
 def create_user(request):
 
     params = request.GET
-    new_user = KartenUser(first_name=params['first_name'], 
+    user = KartenUser(first_name=params['first_name'], 
             last_name=params['last_name'])
 
     if 'external_service' in params.keys() and 'external_user_id' in params.keys():
         ext_id = params['external_user_id']
         existing_users = KartenUser.objects.filter(external_user_id=ext_id)
-        if existing_users.count() > 0:
+        if existing_users.count() > 1:
             error = KartenUserAlreadyExists(ext_id)
             return error.http_response()
-
-        new_user.external_user_id=ext_id
-        new_user.external_service=params['external_service']
+        elif existing_users.count() == 1:
+            user = existing_users[0]
+        elif existing_users.count() == 0:
+            user.external_user_id=ext_id
+            user.external_service=params['external_service']
     
     if token is not None:
-        new_user.populate_with_fb_info(token)
+        user.populate_with_fb_info(token)
 
-    new_user.save()
+    user.save()
 
-    response = jsonpickle.encode(new_user, unpicklable=False)
+    response = jsonpickle.encode(user, unpicklable=False)
     return HttpResponse(content=response, mimetype="application/json")
     
 def get_user(request, user_id):
@@ -98,11 +100,16 @@ def create_user_friend(request, user_id):
 def create_stack(request):
     
     params = request.GET
-    user = KartenUser.objects.get(id=params['owner'])
+    user = KartenUser.objects.get(id=params['owner[id]'])
+
     new_stack = KartenStack(name=params['name'], 
-                                 description=params['description'], 
                                  owner=user)
+    if 'description' in params.keys():
+        new_stack.description = params['description']
+
     new_stack.owner = user
+    new_stack.save()
+    new_stack.allowed_users.add(user)
     new_stack.save()
     return HttpResponse(content=new_stack.to_json(), content_type="application/json")
    
@@ -130,7 +137,7 @@ def get_user_stacks(request, user_id):
         exception = KartenUserDoesNotExist(user_id, _("The stack you requested does not exist."))
         return exception.http_response
 
-    stacks = user.stacks.all()
+    stacks = to_json(user.stacks.all())
     return HttpResponse(content=jsonpickle.encode(stacks, unpicklable=False), mimetype="application/json")
     
 @add_request_context

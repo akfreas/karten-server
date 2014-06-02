@@ -1,5 +1,6 @@
 from django.utils.translation import ugettext as _
 import jsonpickle
+from jsonpickle.pickler import Pickler
 from django.http import HttpResponseRedirect, HttpResponse
 
 #error message factory functions
@@ -20,7 +21,13 @@ def error_for_database_exists(database_name):
 class BaseException(Exception):
 
     def http_response(self):
-        json_string = jsonpickle.encode(self, unpicklable=False)
+        pickler = Pickler(unpicklable=False)
+        info_dict = pickler.flatten(self)
+        del(info_dict['error_code'])
+        main_response_dict = {'error_code' : self.error_code,
+                'info' : info_dict }
+
+        json_string = jsonpickle.encode(main_response_dict, unpicklable=False)
         return HttpResponse(content=json_string, mimetype="application/json")
 
 class ErrorMessage(BaseException):

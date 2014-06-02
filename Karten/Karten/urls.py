@@ -5,17 +5,13 @@ from django.contrib import admin
 admin.autodiscover()
 
 urlpatterns = patterns('Karten.views',
-    # Examples:
-    # url(r'^$', 'Karten.views.home', name='home'),
-    # url(r'^blog/', include('blog.urls')),
-
     url(r'^users', 'all_users'),
-    url(r'^user/create', 'create_user'), #POST
+    url(r'^user/create', 'create_user'),
     url(r'^user/(?P<user_id>\w+)$', 'get_user'),
-    url(r'^user/(?P<user_id>\w+)/update', 'update_user'), #POST
+    url(r'^user/(?P<user_id>\w+)/update', 'update_user'),
     url(r'^user/(?P<user_id>\w+)/stacks/all', 'get_user_stacks'),
     url(r'^user/(?P<user_id>\w+)/friends/$', 'get_user_friends'),
-    url(r'^user/(?P<user_id>\w+)/friends/add', 'create_user_friend'), #POST
+    url(r'^user/(?P<user_id>\w+)/friends/add', 'create_user_friend'),
     url(r'^user/(?P<user_id>\w+)/friends/remove/(?P<friend_id>\w+)', 'remove_user_friend'),
 
     url(r'^stack/create', 'create_stack'),

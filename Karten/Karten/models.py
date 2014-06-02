@@ -8,6 +8,7 @@ import couchdb
 from Karten.errors import *
 from Karten.settings import COUCHDB_SERVERS
 from Karten.json_utils import *
+import re
 
 def couchdb_instance():
     instance = couchdb.Server(url=COUCHDB_SERVERS['Karten'])
@@ -67,11 +68,11 @@ class KartenCouchServer(models.Model):
 class KartenStack(models.Model):
 
     couchdb_name = models.CharField(max_length=255)
-    couchdb_server = models.ForeignKey('KartenCouchServer', related_name='databases')
+    couchdb_server = models.ForeignKey('KartenCouchServer', related_name='stacks')
     owner = models.ForeignKey('KartenUser', related_name='admin_of', null=True) 
     name = models.CharField(max_length=100)
     description = models.CharField(max_length=255, null=True, blank=True)
-    allowed_users = models.ManyToManyField('KartenUser', related_name='databases')
+    allowed_users = models.ManyToManyField('KartenUser', related_name='stacks')
 
     def delete(self, *args, **kwargs):
         try:
@@ -84,11 +85,11 @@ class KartenStack(models.Model):
         super(KartenStack, self).delete(*args, **kwargs)
 
     def save(self, *args, **kwargs):
-        #import pdb;pdb.set_trace()
+
         if self.couchdb_name is None or len(self.couchdb_name) is 0:
             couchserver = couchdb_instance()
             try:
-                formatted_db_name = self.name.replace(" ", "_").lower()
+                formatted_db_name = re.sub(r'[^\w]', '_', self.name.lower())
                 couchserver.create(formatted_db_name)
                 self.couchdb_name = formatted_db_name
                 self.couchdb_server = KartenCouchServer.server_for_app()
