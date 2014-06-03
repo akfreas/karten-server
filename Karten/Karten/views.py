@@ -1,6 +1,7 @@
 from Karten.models import *
 from Karten.errors import *
 from Karten.json_utils import *
+from django.utils.translation import ugettext as _
 
 from django.http import HttpResponseRedirect, HttpResponse
 
