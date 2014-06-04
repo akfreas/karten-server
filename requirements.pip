@@ -19,3 +19,4 @@ restkit==4.2.2
 socketpool==0.5.3
 unittest2==0.5.1
 wsgiref==0.1.2
+psycopg2==2.5.3

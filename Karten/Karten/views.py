@@ -68,7 +68,11 @@ def create_user(request):
     
 def get_user(request, user_id):
 
-    user = KartenUser.objects.get(id=user_id)
+    try:
+        user = KartenUser.objects.get(id=user_id)
+    except KartenUser.DoesNotExist:
+        exception = KartenUserDoesNotExist(user_id)
+        return exception.http_response()
     return HttpResponse(content=user.to_json(), mimetype="application/json")
 
 def update_user(request, user_id):
@@ -135,8 +139,8 @@ def get_user_stacks(request, user_id):
     try:
         user = KartenUser.objects.get(id=user_id)
     except KartenUser.DoesNotExist:
-        exception = KartenUserDoesNotExist(user_id, _("The stack you requested does not exist."))
-        return exception.http_response
+        exception = KartenUserDoesNotExist(user_id)
+        return exception.http_response()
 
     stacks = to_json(user.stacks.all())
     return HttpResponse(content=jsonpickle.encode(stacks, unpicklable=False), mimetype="application/json")

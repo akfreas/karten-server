@@ -43,6 +43,7 @@ class KartenUserAlreadyExists(BaseException):
 class KartenUserDoesNotExist(BaseException):
     def __init__(self, user_id):
         self.user_id = user_id
+        self.message = _("The user you requested does not exist.")
         self.error_code = "ErrorKartenUserDoesNotExist"
         
 
