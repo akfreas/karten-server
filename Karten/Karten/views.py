@@ -157,8 +157,11 @@ def add_user_to_stack(request, stack_id, user_id):
     try:
         user = KartenUser.objects.get(id=user_id)
     except KartenUser.DoesNotExist:
-        e = KartenUserDoesNotExist(user_id)
-        return e.http_response()
+        try:
+            user = KartenUser.objects.get(external_user_id=user_id)
+        except KartenUser.DoesNotExist:
+            e = KartenUserDoesNotExist(user_id)
+            return e.http_response()
 
     stack.allowed_users.add(user)
     stack.save()
