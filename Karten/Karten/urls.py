@@ -12,7 +12,7 @@ urlpatterns = patterns('Karten.views',
     url(r'^user/(?P<user_id>\w+)/stacks/all', 'get_user_stacks'),
     url(r'^user/(?P<user_id>\w+)/friends/$', 'get_user_friends'),
     url(r'^user/(?P<user_id>\w+)/friends/add', 'create_user_friend'),
-    url(r'^user/(?P<user_id>\w+)/friends/remove/(?P<friend_id>\w+)', 'remove_user_friend'),
+    #url(r'^user/(?P<user_id>\w+)/friends/remove/(?P<friend_id>\w+)', 'remove_user_friend'),
 
     url(r'^stack/create', 'create_stack'),
     url(r'^stack/(?P<stack_id>\w+)/delete', 'delete_stack'),
