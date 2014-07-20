@@ -18,6 +18,8 @@ class KartenUser(models.Model):
 
     external_user_id = models.CharField(max_length=255, null=True)
     external_service = models.CharField(max_length=20, null=True)
+    date_joined = models.DateTimeField()
+    date_last_seen = models.DateTimeField()
     first_name = models.CharField(max_length=100, blank=True, null=True)
     last_name = models.CharField(max_length=100, blank=True, null=True)
     friends = models.ManyToManyField('self', symmetrical=False)
@@ -73,6 +75,7 @@ class KartenStack(models.Model):
     name = models.CharField(max_length=100)
     description = models.CharField(max_length=255, null=True, blank=True)
     allowed_users = models.ManyToManyField('KartenUser', related_name='stacks')
+    creation_date = models.DateField()
 
     def delete(self, *args, **kwargs):
         try:
