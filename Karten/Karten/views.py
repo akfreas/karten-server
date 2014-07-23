@@ -2,6 +2,7 @@ from Karten.models import *
 from Karten.errors import *
 from Karten.json_utils import *
 from django.utils.translation import ugettext as _
+from datetime import datetime
 
 from django.http import HttpResponseRedirect, HttpResponse
 
@@ -57,7 +58,9 @@ def create_user(request):
         elif existing_users.count() == 0:
             user.external_user_id=ext_id
             user.external_service=params['external_service']
-    
+    time = datetime.now()
+    user.date_joined = time
+    user.date_last_seen = time
     if token is not None:
         user.populate_with_fb_info(token)
 
