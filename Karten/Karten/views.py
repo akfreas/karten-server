@@ -116,6 +116,7 @@ def create_stack(request):
         new_stack.description = params['description']
 
     new_stack.owner = user
+    new_stack.creation_date = datetime.now()
     new_stack.save()
     new_stack.allowed_users.add(user)
     new_stack.save()
