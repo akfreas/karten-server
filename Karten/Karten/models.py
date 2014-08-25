@@ -1,5 +1,6 @@
 from django.conf import settings
 from django.db import models
+from django.db.models import Q
 from django.utils.translation import ugettext as _
 import facebook
 from jsonpickle.pickler import Pickler
@@ -15,6 +16,9 @@ def couchdb_instance():
     return instance
 
 class KartenUser(models.Model):
+
+    def __unicode__(self):
+        return "id %s: %s %s" % (self.id, self.first_name, self.last_name)
 
     external_user_id = models.CharField(max_length=255, null=True)
     external_service = models.CharField(max_length=20, null=True)
@@ -42,14 +46,21 @@ class KartenUser(models.Model):
 
     def to_json(self):
         return jsonpickle.encode(to_json(self), unpicklable=False)
+    
+    @classmethod
+    def find_by_unique(self, user_id):
+        query = Q(external_user_id=user_id) | Q(id=user_id)
+        user = KartenUser.objects.get(query)
+        return user
 
     @classmethod
     def get_or_create(user_id):
+        query = Q(external_user_id=user_id) | Q(id=user_id)
         try:
-            user = KartenUser.objects.get(user_id=user_id)
+            user = KartenUser.objects.get(query)
         except KartenUser.DoesNotExist: 
-            user = KartenUser(user_id=user_id)
-
+            e = KartenUserDoesNotExist(user_id)
+            return e
         return user
 
 class KartenCouchServer(models.Model):

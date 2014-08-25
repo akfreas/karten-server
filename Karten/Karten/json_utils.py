@@ -8,7 +8,6 @@ def to_json(dj_object):
         for obj in dj_object:
             json_array.append(to_json(obj))
         return json_array
-
     foreign_key_fields = [field for field in dj_object._meta.fields]# if type(field) in [django.db.models.ForeignKey, django.db.models.ManyToManyField]]
     fk_array = []
     pickler = Pickler(unpicklable=False)

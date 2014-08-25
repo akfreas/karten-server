@@ -91,7 +91,6 @@ class UserCreationTestCase(TestCase):
             response_json = json.loads(response.content)
             self.assertEqual(new_value, response_json[key])
 
-
 class DatabaseTests(TestCase):
 
     def setUp(self):
@@ -144,6 +143,19 @@ class DatabaseTests(TestCase):
 
         json_response = json.loads(self.client.get("/stack/%s/delete" % new_db['id']).content)
         self.assertEqual(json_response['couchdb_name'], new_db['couchdb_name'])
+
+    def test_create_stack_with_duplicate_name(self):
+
+        database_data = self.database_data()
+        response_1 = self.client.get("/stack/create", database_data)
+        new_db_1 = json.loads(response.content)
+        response_2 = self.client.get("/stack/create", database_data)
+        new_db_2 = json.loads(response.content)
+
+        self.assertEqual(new_db_1['name'], new_db_2['name'])
+        self.assertEqual(new_db_1['owner_id'], new_db_2['owner_id'])
+        self.assertEqual(new_db_1['description'], new_db_2['description'])
+        self.assertNotEqual(new_db_1['couchdb_server'], new_db_2['couchdb_server'])
 
     def test_add_remove_user_to_database(self):
         database_data = self.database_data()
