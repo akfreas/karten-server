@@ -20,27 +20,26 @@ user_stacks = views.KartenStackViewSet.as_view(actions={
 
 router = DefaultRouter()
 router.register(r'users', views.KartenUserViewSet)
-router.register(r'stacks', views.KartenStackViewSet)
+router.register(r'stacks', views.KartenStackViewSet, base_name='user_stacks')
 
 urlpatterns = patterns('Karten.views',
-    url(r'^user/create', 'create_user'),
-    url(r'^user/(?P<user_id>\w+)/update', 'update_user'),
     url(r'^user/(?P<user_id>\w+)/stacks/all', 'get_user_stacks'),
     url(r'^user/(?P<user_id>\w+)/friends/$', 'get_user_friends'),
     url(r'^user/(?P<user_id>\w+)/friends/add', 'create_user_friend'),
-    #url(r'^user/(?P<user_id>\w+)/friends/remove/(?P<friend_id>\w+)', 'remove_user_friend'),
 
     url(r'^stack/create', 'create_stack'),
     url(r'^stack/(?P<stack_id>\w+)/delete', 'delete_stack'),
     url(r'^stack/(?P<stack_id>\w+)/user/(?P<user_id>\w+)/add', 'add_user_to_stack'),
     url(r'^stack/(?P<stack_id>\w+)/user/(?P<user_id>\w+)/delete', 'remove_user_from_stack'),
     url(r'^stack/(?P<stack_id>\w+)/users/all', 'get_all_users_for_stack'),
-    
-
     url(r'^admin/', include(admin.site.urls)),
 )
 
 urlpatterns += patterns('',
         url(r'^', include(router.urls)),
-        url(r'^api_auth/', include('rest_framework.urls', namespace='rest_framework'))
 )
+
+urlpatterns += patterns('',
+            url(r'^api-auth/', include('rest_framework.urls',
+                                               namespace='rest_framework')),
+            )

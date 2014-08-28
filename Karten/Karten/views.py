@@ -31,42 +31,44 @@ class KartenUserViewSet(viewsets.ModelViewSet):
     queryset = KartenUser.objects.all()
     serializer_class = KartenUserSerializer
 
+    def retrieve(self, request, pk=None):
+        user = self.get_object()
+        user.date_last_seen = datetime.now()
+        user.save()
+        serializer = KartenUserSerializer(user)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
     def create(self, request, *args, **kwargs):
-        pass
+        user_serializer = self.serializer_class(data=request.DATA)
+        if user_serializer.is_valid():
+            new_user = user_serializer.object
+            time_now = datetime.now()
+            new_user.date_joined = time_now
+            new_user.date_last_seen = time_now
+            user_serializer.save()
+            return Response(user_serializer.data, status=status.HTTP_201_CREATED)
+        return Response(user_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+#class KartenUserStackViewSet(viewsets.ModelViewSet):
+
+
 
 class KartenStackViewSet(viewsets.ModelViewSet):
 
-    queryset = KartenStack.objects.all()
     serializer_class = KartenStackSerializer
+    permission_classes = (permissions.IsAuthenticated,)
 
-class KartenUserDetail(APIView):
+    def get_queryset(self):
+        user = self.request.user
+        return KartenStack.objects.filter(allowed_users=user)
 
-    def get_object(self, user_id):
-        try:
-            return KartenUser.find_by_unique(user_id)
-        except KartenUser.DoesNotExist:
-            raise Http404
+    def pre_save(self, obj):
+        obj.owner = self.request.user
 
-    def get(self, request, user_id, format=None):
-        user = self.get_object(user_id)
-        serializer = KartenUserSerializer(user)
-        
-        return Response(serializer.data)
-    
-    def put(self, request, user_id, format=None):
-        user = self.get_object(user_id)
-        serializer = KartenUserSerializer(user, data=request.DATA)
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    def post_save(self, obj, created):
+        if created is True:
+            obj.allowed_users.add(self.request.user)
 
-    def post(self, request, user_id, format=None):
-        serializer = KartenUserSerializer(data=request.DATA)
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
-        return Response(status=status.HTTP_400_BAD_REQUEST)
 
 def add_request_context(f):
     def inner_def(request, *args, **kwargs):

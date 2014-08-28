@@ -14,17 +14,26 @@ class KartenUserSerializer(serializers.HyperlinkedModelSerializer):
                 'last_name',
                 )
 
+class KartenCouchServerSerializer(serializers.HyperlinkedModelSerializer):
+
+    class Meta:
+        model = KartenCouchServer
+        fields = ('server_url',)
+
 class KartenStackSerializer(serializers.HyperlinkedModelSerializer):
 
     owner = serializers.Field(source='owner.username')
+    couchdb_server = KartenCouchServerSerializer(read_only=True)
 
     class Meta:
         model = KartenStack
-        fields = ('couchdb_name',
+        fields = ('id',
+                'couchdb_name',
                 'couchdb_server',
                 'owner',
                 'name',
                 'description',
                 'allowed_users',
                 'creation_date')
+        read_only_fields = ('couchdb_name',)
 

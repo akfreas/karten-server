@@ -2,6 +2,7 @@ from django.conf import settings
 from django.db import models
 from django.db.models import Q
 from django.utils.translation import ugettext as _
+from django.contrib.auth.models import AbstractBaseUser, BaseUserManager
 import facebook
 from jsonpickle.pickler import Pickler
 import jsonpickle
@@ -9,24 +10,76 @@ import couchdb
 from Karten.errors import *
 from Karten.settings import COUCHDB_SERVERS
 from Karten.json_utils import *
+from datetime import datetime
 import re
 
 def couchdb_instance():
     instance = couchdb.Server(url=COUCHDB_SERVERS['Karten'])
     return instance
 
-class KartenUser(models.Model):
+
+class KartenUserManager(BaseUserManager):
+
+    def create_user(self, username, password):
+        
+        user = self.model(
+                username = username,
+        )
+
+
+        user.set_password(password)
+        user.save(using=self._db)
+        return user
+
+    def create_superuser(self, username, password):
+
+        time_now = datetime.now()
+        user = self.create_user(
+            username=username,
+            password=password,
+        )
+        user.date_joined = time_now
+        user.date_last_seen = time_now
+        user.is_admin = True
+        user.is_staff = True
+
+        user.save(using=self._db)
+        return user
+
+
+
+class KartenUser(AbstractBaseUser):
+
+    class Meta:
+        verbose_name = 'user'
+        verbose_name_plural = 'users'
+        ordering = ['username']
+
+    USERNAME_FIELD = 'username'
+    objects = KartenUserManager()
 
     def __unicode__(self):
         return "id %s: %s %s" % (self.id, self.first_name, self.last_name)
 
+    username = models.CharField(max_length=100, unique=True)
+        
+    email = models.EmailField(
+        verbose_name='email address',
+        max_length=255,
+        null=True,
+        blank=True,
+        unique=True,
+        db_index=True,
+    )
+
     external_user_id = models.CharField(max_length=255, null=True)
     external_service = models.CharField(max_length=20, null=True)
-    date_joined = models.DateTimeField()
-    date_last_seen = models.DateTimeField()
+    date_joined = models.DateTimeField(null=True, blank=True)
+    date_last_seen = models.DateTimeField(null=True, blank=True)
     first_name = models.CharField(max_length=100, blank=True, null=True)
     last_name = models.CharField(max_length=100, blank=True, null=True)
     friends = models.ManyToManyField('self', symmetrical=False)
+    is_admin = models.BooleanField(default=False)
 
     def populate_with_fb_info(self, access_token):
         graph_obj = facebook.GraphAPI(access_token)
@@ -62,6 +115,37 @@ class KartenUser(models.Model):
             e = KartenUserDoesNotExist(user_id)
             return e
         return user
+
+    def get_full_name(self):
+        return "%s %s" % (self.first_name, self.last_name)
+
+    def get_short_name(self):
+        return self.first_name
+
+    def __unicode__(self):
+        return self.username
+
+    def has_perm(self, perm, obj=None):
+        #TODO do this properly
+        return True
+
+    def has_module_perms(self, app_label):
+        #TODO do this properly
+        return True
+
+    @property
+    def is_staff(self):
+        return self.is_admin
+
+    @property
+    def is_active(self):
+        return True
+
+
+    @is_staff.setter
+    def is_staff(self, value):
+        self.is_admin = value
+
 
 class KartenCouchServer(models.Model):
     server_url = models.URLField(max_length=255)
