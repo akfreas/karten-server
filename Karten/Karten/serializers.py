@@ -4,15 +4,21 @@ from django.contrib.auth.models import User
 
 class KartenUserSerializer(serializers.HyperlinkedModelSerializer):
     owner = serializers.Field(source='owner.username')
+    external_user_id = serializers.CharField(required=False)
+    external_service = serializers.CharField(required=False)
+
 
     class Meta:
         model = KartenUser
-        fields = ('external_user_id', 
+        fields = ('password',
+                'username',
+                'external_user_id', 
                 'external_service',
                 'date_joined',
                 'first_name',
                 'last_name',
                 )
+#        write_only_fields = ('password',)
 
 class KartenCouchServerSerializer(serializers.HyperlinkedModelSerializer):
 

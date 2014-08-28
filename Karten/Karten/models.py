@@ -8,15 +8,12 @@ from jsonpickle.pickler import Pickler
 import jsonpickle
 import couchdb
 from Karten.errors import *
-from Karten.settings import COUCHDB_SERVERS
+
 from Karten.json_utils import *
 from datetime import datetime
+import couch_utils
+from CouchDBServerManager import couchdb_instance
 import re
-
-def couchdb_instance():
-    instance = couchdb.Server(url=COUCHDB_SERVERS['Karten'])
-    return instance
-
 
 class KartenUserManager(BaseUserManager):
 
@@ -46,8 +43,6 @@ class KartenUserManager(BaseUserManager):
         user.save(using=self._db)
         return user
 
-
-
 class KartenUser(AbstractBaseUser):
 
     class Meta:
@@ -72,8 +67,8 @@ class KartenUser(AbstractBaseUser):
         db_index=True,
     )
 
-    external_user_id = models.CharField(max_length=255, null=True)
-    external_service = models.CharField(max_length=20, null=True)
+    external_user_id = models.CharField(max_length=255, null=True, blank=True)
+    external_service = models.CharField(max_length=20, null=True, blank=True)
     date_joined = models.DateTimeField(null=True, blank=True)
     date_last_seen = models.DateTimeField(null=True, blank=True)
     first_name = models.CharField(max_length=100, blank=True, null=True)
@@ -188,7 +183,7 @@ class KartenStack(models.Model):
             couchserver = couchdb_instance()
             try:
                 formatted_db_name = re.sub(r'[^\w]', '_', self.name.lower())
-                couchserver.create(formatted_db_name)
+                couch_utils.create_db_for_user(couchserver, formatted_db_name, owner.username)
                 self.couchdb_name = formatted_db_name
                 self.couchdb_server = KartenCouchServer.server_for_app()
             except couchdb.PreconditionFailed:

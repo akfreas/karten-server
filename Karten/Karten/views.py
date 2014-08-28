@@ -42,16 +42,13 @@ class KartenUserViewSet(viewsets.ModelViewSet):
         user_serializer = self.serializer_class(data=request.DATA)
         if user_serializer.is_valid():
             new_user = user_serializer.object
+            new_user.set_password(new_user.password)
             time_now = datetime.now()
             new_user.date_joined = time_now
             new_user.date_last_seen = time_now
             user_serializer.save()
             return Response(user_serializer.data, status=status.HTTP_201_CREATED)
         return Response(user_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-#class KartenUserStackViewSet(viewsets.ModelViewSet):
-
-
 
 class KartenStackViewSet(viewsets.ModelViewSet):
 

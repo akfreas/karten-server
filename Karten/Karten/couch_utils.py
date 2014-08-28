@@ -42,5 +42,6 @@ def delete_couch_user(server, username):
     couch_user_id = "org.couchdb.user:%s" % username
     user_db = server['_users']
     user_doc = user_db.get(couch_user_id)
-    user_db.delete(user_doc)
+    if user_doc is not None:
+        user_db.delete(user_doc)
 

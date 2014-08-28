@@ -11,10 +11,17 @@ class Migration(SchemaMigration):
         # Adding model 'KartenUser'
         db.create_table(u'Karten_kartenuser', (
             (u'id', self.gf('django.db.models.fields.AutoField')(primary_key=True)),
+            ('password', self.gf('django.db.models.fields.CharField')(max_length=128)),
+            ('last_login', self.gf('django.db.models.fields.DateTimeField')(default=datetime.datetime.now)),
+            ('username', self.gf('django.db.models.fields.CharField')(unique=True, max_length=100)),
+            ('email', self.gf('django.db.models.fields.EmailField')(db_index=True, max_length=255, unique=True, null=True, blank=True)),
             ('external_user_id', self.gf('django.db.models.fields.CharField')(max_length=255, null=True)),
             ('external_service', self.gf('django.db.models.fields.CharField')(max_length=20, null=True)),
+            ('date_joined', self.gf('django.db.models.fields.DateTimeField')(null=True, blank=True)),
+            ('date_last_seen', self.gf('django.db.models.fields.DateTimeField')(null=True, blank=True)),
             ('first_name', self.gf('django.db.models.fields.CharField')(max_length=100, null=True, blank=True)),
             ('last_name', self.gf('django.db.models.fields.CharField')(max_length=100, null=True, blank=True)),
+            ('is_admin', self.gf('django.db.models.fields.BooleanField')(default=False)),
         ))
         db.send_create_signal(u'Karten', ['KartenUser'])
 
@@ -91,13 +98,20 @@ class Migration(SchemaMigration):
             'owner': ('django.db.models.fields.related.ForeignKey', [], {'related_name': "'admin_of'", 'null': 'True', 'to': u"orm['Karten.KartenUser']"})
         },
         u'Karten.kartenuser': {
-            'Meta': {'object_name': 'KartenUser'},
+            'Meta': {'ordering': "['username']", 'object_name': 'KartenUser'},
+            'date_joined': ('django.db.models.fields.DateTimeField', [], {'null': 'True', 'blank': 'True'}),
+            'date_last_seen': ('django.db.models.fields.DateTimeField', [], {'null': 'True', 'blank': 'True'}),
+            'email': ('django.db.models.fields.EmailField', [], {'db_index': 'True', 'max_length': '255', 'unique': 'True', 'null': 'True', 'blank': 'True'}),
             'external_service': ('django.db.models.fields.CharField', [], {'max_length': '20', 'null': 'True'}),
             'external_user_id': ('django.db.models.fields.CharField', [], {'max_length': '255', 'null': 'True'}),
             'first_name': ('django.db.models.fields.CharField', [], {'max_length': '100', 'null': 'True', 'blank': 'True'}),
             'friends': ('django.db.models.fields.related.ManyToManyField', [], {'to': u"orm['Karten.KartenUser']", 'symmetrical': 'False'}),
             u'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
-            'last_name': ('django.db.models.fields.CharField', [], {'max_length': '100', 'null': 'True', 'blank': 'True'})
+            'is_admin': ('django.db.models.fields.BooleanField', [], {'default': 'False'}),
+            'last_login': ('django.db.models.fields.DateTimeField', [], {'default': 'datetime.datetime.now'}),
+            'last_name': ('django.db.models.fields.CharField', [], {'max_length': '100', 'null': 'True', 'blank': 'True'}),
+            'password': ('django.db.models.fields.CharField', [], {'max_length': '128'}),
+            'username': ('django.db.models.fields.CharField', [], {'unique': 'True', 'max_length': '100'})
         }
     }
 
