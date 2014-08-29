@@ -66,6 +66,16 @@ class KartenStackViewSet(viewsets.ModelViewSet):
         if created is True:
             obj.allowed_users.add(self.request.user)
 
+class KartenCurrentUserView(APIView):
+
+    serializer_class = KartenUserSerializer
+
+    model = KartenUser
+
+    def get(self, request, format=None):
+        user = self.request.user
+        user_serializer = self.serializer_class(user)
+        return Response(user_serializer.data)
 
 def add_request_context(f):
     def inner_def(request, *args, **kwargs):
