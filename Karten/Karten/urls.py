@@ -38,6 +38,9 @@ urlpatterns = patterns('Karten.views',
 urlpatterns += patterns('',
         url(r'^', include(router.urls)),
 )
+urlpatterns += patterns('',
+            url(r'^api-token-auth/', 'rest_framework.authtoken.views.obtain_auth_token')
+)
 
 urlpatterns += patterns('',
             url(r'^api-auth/', include('rest_framework.urls',

@@ -26,9 +26,9 @@ class KartenCouchServerSerializer(serializers.HyperlinkedModelSerializer):
         model = KartenCouchServer
         fields = ('server_url',)
 
-class KartenStackSerializer(serializers.HyperlinkedModelSerializer):
+class KartenStackSerializer(serializers.ModelSerializer):
 
-    owner = serializers.Field(source='owner.username')
+    owner = serializers.Field(source='owner.id')
     couchdb_server = KartenCouchServerSerializer(read_only=True)
 
     class Meta:

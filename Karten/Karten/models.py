@@ -12,7 +12,7 @@ from Karten.errors import *
 from Karten.json_utils import *
 from datetime import datetime
 import couch_utils
-from CouchDBServerManager import couchdb_instance
+from CouchDBServerManager import couchdb_instance, unauthed_couch_url
 import re
 
 class KartenUserManager(BaseUserManager):
@@ -148,9 +148,9 @@ class KartenCouchServer(models.Model):
     @classmethod
     def server_for_app(self):
         try:
-            server = KartenCouchServer.objects.get(server_url=COUCHDB_SERVERS['Karten'])
+            server = KartenCouchServer.objects.get(server_url=unauthed_couch_url())
         except KartenCouchServer.DoesNotExist:
-            server = KartenCouchServer(server_url=COUCHDB_SERVERS['Karten'])
+            server = KartenCouchServer(server_url=unauthed_couch_url())
             server.save()
 
         return server
@@ -179,11 +179,12 @@ class KartenStack(models.Model):
 
     def save(self, *args, **kwargs):
 
-        if self.couchdb_name is None or len(self.couchdb_name) is 0:
+        if (self.couchdb_name is None or len(self.couchdb_name) is 0) and self.id is None:
             couchserver = couchdb_instance()
             try:
                 formatted_db_name = re.sub(r'[^\w]', '_', self.name.lower())
-                couch_utils.create_db_for_user(couchserver, formatted_db_name, owner.username)
+                formatted_db_name += ("_%s" % self.owner.username)
+                couch_utils.create_db_for_user(couchserver, formatted_db_name, self.owner.username)
                 self.couchdb_name = formatted_db_name
                 self.couchdb_server = KartenCouchServer.server_for_app()
             except couchdb.PreconditionFailed:
@@ -200,5 +201,5 @@ class KartenStack(models.Model):
 
     @property
     def couchdb_url(self):
-        return COUCHDB_SERVERS['Karten'] + self.couchdb_name
+        return unauthed_couch_url() + self.couchdb_name
 
