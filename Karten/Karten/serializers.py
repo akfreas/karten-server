@@ -25,7 +25,10 @@ class KartenCouchServerSerializer(serializers.HyperlinkedModelSerializer):
 
     class Meta:
         model = KartenCouchServer
-        fields = ('server_url',)
+        fields = ('host',
+                'port',
+                'protocol',
+                'id')
 
 class KartenStackSerializer(serializers.ModelSerializer):
 

@@ -62,7 +62,6 @@ class KartenUserAdmin(UserAdmin):
             ('Important dates', {'fields' : ('last_login',)}),
         )
 
-
     add_fieldsets = (
             (None, {
                 'classes' : ('wide',),
@@ -76,6 +75,8 @@ class KartenUserAdmin(UserAdmin):
     ordering = ('email',)
     filter_horizontal = ()
 
-
-
 admin.site.register(KartenUser, KartenUserAdmin)
+
+class KartenCouchServerAdmin(admin.ModelAdmin):
+    list_display = ('host', 'protocol', 'port')
+admin.site.register(KartenCouchServer, KartenCouchServerAdmin)

@@ -15,8 +15,8 @@ class Migration(SchemaMigration):
             ('last_login', self.gf('django.db.models.fields.DateTimeField')(default=datetime.datetime.now)),
             ('username', self.gf('django.db.models.fields.CharField')(unique=True, max_length=100)),
             ('email', self.gf('django.db.models.fields.EmailField')(db_index=True, max_length=255, unique=True, null=True, blank=True)),
-            ('external_user_id', self.gf('django.db.models.fields.CharField')(max_length=255, null=True)),
-            ('external_service', self.gf('django.db.models.fields.CharField')(max_length=20, null=True)),
+            ('external_user_id', self.gf('django.db.models.fields.CharField')(max_length=255, null=True, blank=True)),
+            ('external_service', self.gf('django.db.models.fields.CharField')(max_length=20, null=True, blank=True)),
             ('date_joined', self.gf('django.db.models.fields.DateTimeField')(null=True, blank=True)),
             ('date_last_seen', self.gf('django.db.models.fields.DateTimeField')(null=True, blank=True)),
             ('first_name', self.gf('django.db.models.fields.CharField')(max_length=100, null=True, blank=True)),
@@ -37,7 +37,9 @@ class Migration(SchemaMigration):
         # Adding model 'KartenCouchServer'
         db.create_table(u'Karten_kartencouchserver', (
             (u'id', self.gf('django.db.models.fields.AutoField')(primary_key=True)),
-            ('server_url', self.gf('django.db.models.fields.URLField')(max_length=255)),
+            ('host', self.gf('django.db.models.fields.CharField')(max_length=50)),
+            ('port', self.gf('django.db.models.fields.IntegerField')()),
+            ('protocol', self.gf('django.db.models.fields.CharField')(max_length=10)),
         ))
         db.send_create_signal(u'Karten', ['KartenCouchServer'])
 
@@ -83,8 +85,10 @@ class Migration(SchemaMigration):
     models = {
         u'Karten.kartencouchserver': {
             'Meta': {'object_name': 'KartenCouchServer'},
+            'host': ('django.db.models.fields.CharField', [], {'max_length': '50'}),
             u'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
-            'server_url': ('django.db.models.fields.URLField', [], {'max_length': '255'})
+            'port': ('django.db.models.fields.IntegerField', [], {}),
+            'protocol': ('django.db.models.fields.CharField', [], {'max_length': '10'})
         },
         u'Karten.kartenstack': {
             'Meta': {'object_name': 'KartenStack'},
@@ -102,8 +106,8 @@ class Migration(SchemaMigration):
             'date_joined': ('django.db.models.fields.DateTimeField', [], {'null': 'True', 'blank': 'True'}),
             'date_last_seen': ('django.db.models.fields.DateTimeField', [], {'null': 'True', 'blank': 'True'}),
             'email': ('django.db.models.fields.EmailField', [], {'db_index': 'True', 'max_length': '255', 'unique': 'True', 'null': 'True', 'blank': 'True'}),
-            'external_service': ('django.db.models.fields.CharField', [], {'max_length': '20', 'null': 'True'}),
-            'external_user_id': ('django.db.models.fields.CharField', [], {'max_length': '255', 'null': 'True'}),
+            'external_service': ('django.db.models.fields.CharField', [], {'max_length': '20', 'null': 'True', 'blank': 'True'}),
+            'external_user_id': ('django.db.models.fields.CharField', [], {'max_length': '255', 'null': 'True', 'blank': 'True'}),
             'first_name': ('django.db.models.fields.CharField', [], {'max_length': '100', 'null': 'True', 'blank': 'True'}),
             'friends': ('django.db.models.fields.related.ManyToManyField', [], {'to': u"orm['Karten.KartenUser']", 'symmetrical': 'False'}),
             u'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),

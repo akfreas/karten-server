@@ -11,8 +11,14 @@ def create_couch_user(server, new_username, user_password):
                      'type' : 'user',
                      'password' : user_password}
     users_resource = server.resource("_users")
-    result = users_resource.put(path=user_couchid, body=json.dumps(new_user_dict))
-    return result
+    try:
+        result = users_resource.put(path=user_couchid, body=json.dumps(new_user_dict))
+        return result
+    except couchdb.ResourceConflict:
+        return None
+
+def add_user_to_db(server, db_name, username):
+    pass
 
 def create_db_for_user(server, db_name, username):
     

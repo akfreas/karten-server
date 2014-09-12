@@ -145,15 +145,20 @@ class KartenUser(AbstractBaseUser):
 class KartenCouchServer(models.Model):
     server_url = models.URLField(max_length=255)
 
+    host = models.CharField(max_length=50)
+    port = models.IntegerField()
+    protocol = models.CharField(max_length=10)
+
+    @property
+    def server_url(self):
+        return "%s://%s:%s/" % (self.protocol, self.host, self.port)
+
+
     @classmethod
     def server_for_app(self):
-        try:
-            server = KartenCouchServer.objects.get(server_url=unauthed_couch_url())
-        except KartenCouchServer.DoesNotExist:
-            server = KartenCouchServer(server_url=unauthed_couch_url())
-            server.save()
-
+        server = KartenCouchServer.objects.first()
         return server
+
     def to_json(self):
         return jsonpickle.encode(to_json(self), unpicklable=False)
     
