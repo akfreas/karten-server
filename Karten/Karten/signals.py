@@ -1,6 +1,6 @@
-from models import *
 import couchdb
-from errors import *
+from Karten.models import *
+from Karten.errors import *
 
 from django.contrib.auth import get_user_model
 from django.db.models.signals import post_save, pre_delete
