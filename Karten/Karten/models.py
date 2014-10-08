@@ -43,6 +43,13 @@ class KartenUserManager(BaseUserManager):
         user.save(using=self._db)
         return user
 
+class KartenUserFriendRequest(models.Model):
+
+    requesting_user = models.ForeignKey('KartenUser', related_name='friends_requested')
+    accepting_user = models.ForeignKey('KartenUser', related_name='friend_requests')
+    accepted = models.BooleanField(default=False)
+    date_accepted = models.DateTimeField()
+    
 class KartenUser(AbstractBaseUser):
 
     class Meta:
@@ -73,7 +80,7 @@ class KartenUser(AbstractBaseUser):
     date_last_seen = models.DateTimeField(null=True, blank=True)
     first_name = models.CharField(max_length=100, blank=True, null=True)
     last_name = models.CharField(max_length=100, blank=True, null=True)
-    friends = models.ManyToManyField('self', symmetrical=False)
+    friends = models.ManyToManyField('self', symmetrical=True)
     is_admin = models.BooleanField(default=False)
 
     def populate_with_fb_info(self, access_token):
@@ -82,19 +89,6 @@ class KartenUser(AbstractBaseUser):
         self.first_name = fb_object['first_name']
         self.last_name = fb_object['last_name']
 
-    def friends_to_json(self):
-        friends = self.friends.all()
-        return jsonpickle.encode(friends, unpicklable=False)
-
-    def update_with_json(self, json):
-        allowed_keys = ['first_name', 'last_name']
-        filtered_keys = [key for key in json.keys() if key in allowed_keys]
-        for key in filtered_keys:
-            self.__setattr__(key, json[key])
-
-    def to_json(self):
-        return jsonpickle.encode(to_json(self), unpicklable=False)
-    
     @classmethod
     def find_by_unique(self, user_id):
         query = Q(external_user_id=user_id) | Q(id=user_id)
