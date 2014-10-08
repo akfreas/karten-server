@@ -7,31 +7,24 @@ admin.autodiscover()
 
 from rest_framework.routers import DefaultRouter
 from rest_framework.urlpatterns import format_suffix_patterns
-"""
-user_list = views.KartenUserViewSet.as_view(actions={
-    'get' : 'list',
-    'post' : 'create',
-})
-
-user_stacks = views.KartenStackViewSet.as_view(actions={
-    'get' : 'list',
-    'post' : 'create',
-})
-"""
 
 router = DefaultRouter()
 router.register(r'users', views.KartenUserViewSet)
 router.register(r'stacks', views.KartenStackViewSet, base_name='user_stacks')
+router.register(r'users/(?P<user_id>[^/]+)/friends', views.KartenUserFriendsView)
+router.register(r'friends/outgoing', views.KartenUserFriendRequestView, base_name='outgoing_requests')
+router.register(r'friends/incoming', views.KartenUserFriendAcceptView, base_name='incoming_requests')
 
 urlpatterns = patterns('Karten.views',
-    url(r'^user/(?P<user_id>\w+)/stacks/all', 'get_user_stacks'),
-    url(r'^user/(?P<user_id>\w+)/friends/$', 'get_user_friends'),
-    url(r'^user/(?P<user_id>\w+)/friends/add', 'create_user_friend'),
+    url(r'^stacks/(?P<stack_id>\w+)/user/(?P<user_id>\w+)/add', 'add_user_to_stack'),
     url(r'^users/me', views.KartenCurrentUserView.as_view()),
+#    url(r'friends/requests/outgoing', views.KartenUserFriendRequestView.as_view()),
+#    url(r'friends/requests/incoming', views.KartenUserFriendAcceptView.as_view()),
 
-    url(r'^stack/create', 'create_stack'),
-    url(r'^stack/(?P<stack_id>\w+)/delete', 'delete_stack'),
-    url(r'^stack/(?P<stack_id>\w+)/user/(?P<user_id>\w+)/add', 'add_user_to_stack'),
+    ## Below: to be deleted!
+
+    url(r'^user/(?P<user_id>\w+)/stacks/all', 'get_user_stacks'),
+
     url(r'^stack/(?P<stack_id>\w+)/user/(?P<user_id>\w+)/delete', 'remove_user_from_stack'),
     url(r'^stack/(?P<stack_id>\w+)/users/all', 'get_all_users_for_stack'),
     url(r'^admin/', include(admin.site.urls)),
