@@ -36,3 +36,11 @@ def update_couchdb_password(sender, instance=None, created=False, **kwargs):
         couchserver = couchdb_instance()
         couch_utils.change_user_password(couchserver, instance.user.username, instance.key)
 
+@receiver(pre_save, sender=KartenUserFriendRequest)
+def add_friend_to_list(sender, instance=None, created=False, **kwargs):
+
+    if instance.accepted is True:
+        acceptor = KartenUser.objects.get(id=instance.accepting_user)
+        accepted = KaretenUser.objects.get(id=instance.requesting_user)
+        accepted.friends.add(acceptor)
+        accepted.save()
