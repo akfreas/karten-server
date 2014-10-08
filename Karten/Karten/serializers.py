@@ -21,6 +21,14 @@ class KartenUserSerializer(serializers.HyperlinkedModelSerializer):
                 )
         write_only_fields = ('password',)
 
+class KartenFriendRequestSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = KartenUserFriendRequest
+        fields = ('requesting_user',
+                'accepting_user',
+                'accepted')
+
 class KartenCouchServerSerializer(serializers.HyperlinkedModelSerializer):
 
     class Meta:
