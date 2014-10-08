@@ -19,8 +19,7 @@ from rest_framework.reverse import reverse
 from rest_framework.views import APIView
 from rest_framework import status
 from Karten.serializers import *
-
-
+from rest_framework.decorators import detail_route, list_route
 
 import json
 import jsonpickle
@@ -77,6 +76,118 @@ class KartenCurrentUserView(APIView):
         user_serializer = self.serializer_class(user)
         return Response(user_serializer.data)
 
+
+
+class KartenUserFriendsView(viewsets.ViewSet):
+
+    serializer_class = KartenUserSerializer
+    model = KartenUser
+
+    def get_queryset(self):
+        return KartenUser.objects.all()
+
+#probably should not have this api method, use friend requests instead
+    def create(self, request, user_id=None):
+
+        if int(user_id) is not self.request.user.id:
+            return Response(status=status.HTTP_403_FORBIDDEN)
+
+        try:
+            new_friend = KartenUser.objects.get(id=request.DATA)
+            self.request.user.friends.add(new_friend)
+            serialized_friend = self.serializer_class(new_friend)
+            return Response(serialized_friend.data, status=status.HTTP_201_CREATED) 
+        except KartenUser.DoesNotExist:
+            return Response(status=status.HTTP_404_NOT_FOUND)
+           
+   
+    def delete(self, request, user_id=None):
+
+        import pdb;pdb.set_trace()
+        if int(user_id) is not self.request.user.id:
+            return Response(status=status.HTTP_403_FORBIDDEN)
+
+        try:
+            removed_friend = KartenUser.objects.get(id=request.DATA)
+            self.request.user.friends.remove(removed_friend)
+            return Response(status=status.HTTP_200_OK)
+
+        except KartenUser.DoesNotExist:
+            return Response(status=status.HTTP_404_NOT_FOUND)
+    
+    def list(self, request, user_id=None):
+        try:
+            user = KartenUser.objects.get(id=user_id)
+            users = user.friends.all()
+            serializer = self.serializer_class(users)
+            return Response(serializer.data)
+        except KartenUser.DoesNotExist:
+            return Response(status=status.HTTP_404_NOT_FOUND)
+
+class KartenUserFriendRequestView(viewsets.ViewSet):
+
+    
+    permission_classes = (permissions.IsAuthenticated,)
+
+    def create(self, request):
+        try:
+            new_friend = KartenUser.objects.get(id=request.DATA)
+            friend_request = KartenUserFriendRequest(requesting_user=self.request.user.id,
+                    accepting_user=new_friend, accepted=False)
+            friend_request.save()
+            serialized_request = KartenFriendRequestSerializer(friend_request)
+            return Response(serialized_request.data, status=status.HTTP_201_CREATED)
+        except KartenUser.DoesNotExist:
+            return Response(status=status.HTTP_404_NOT_FOUND)
+
+    def delete(self, request):
+        try:
+            removed_request = KartenUserFriendRequest.objects.get(requesting_user=request.DATA)
+            removed_request.delete()
+            return Response(status=status.HTTP_200_OK)
+        except KartenUserFriendRequest.DoesNotExist:
+            return Response(status=status.HTTP_404_NOT_FOUND)
+
+    def list(self, request):
+        friend_requests = KartenUserFriendRequest.objects.filter(requesting_user=self.request.user.id)
+        serialized_requests = KartenFriendRequestSerializer(friend_requests, many=True)
+        return Response(serialized_requests.data, status=status.HTTP_200_OK)
+
+class KartenUserFriendAcceptView(viewsets.ViewSet):
+
+    permission_classes = (permissions.IsAuthenticated,)
+
+    def list(self, request):
+        friend_requests = KartenUserFriendRequest.objects.filter(accepting_user=self.request.user.id)
+        serialized_requests = KartenFriendRequestSerializer(friend_requests, many=True)
+        return Response(serialized_requests.data, status=status.HTTP_200_OK)
+
+    @detail_route(methods=['post'])
+    def accept(self, request):
+
+        try:
+            accepting_request = KartenUserFriendRequest.objects.get(id=self.request.data)
+            accepting_request.accepted = True
+            accepting_request.save()
+            return Response(status=status.HTTP_200_OK)
+        except KartenUserFriendRequest.DoesNotExist:
+            return Response(status=status.HTTP_404_NOT_FOUND)
+
+    @detail_route(methods=['post'])
+    def deny(self, request):
+
+        try:
+            denying_request = KartenUserFriendRequest.objects.get(id=self.request.data)
+            denying_request.accepted = False
+            denying_request.save()
+            return Response(status=status.HTTP_200_OK)
+        except KartenUserFriendRequest.DoesNotExist:
+            return Response(status=status.HTTP_404_NOT_FOUND)
+
+
+        
+
+
 def add_request_context(f):
     def inner_def(request, *args, **kwargs):
         query_dict = request.GET
@@ -90,52 +201,6 @@ def add_request_context(f):
         return result
     return inner_def
 
-
-@add_request_context
-def create_user(request):
-
-    params = request.GET
-    user = KartenUser(first_name=params['first_name'], 
-            last_name=params['last_name'])
-
-    if 'external_service' in params.keys() and 'external_user_id' in params.keys():
-        ext_id = params['external_user_id']
-        existing_users = KartenUser.objects.filter(external_user_id=ext_id)
-        if existing_users.count() > 1:
-            error = KartenUserAlreadyExists(ext_id)
-            return error.http_response()
-        elif existing_users.count() == 1:
-            user = existing_users[0]
-        elif existing_users.count() == 0:
-            user.external_user_id=ext_id
-            user.external_service=params['external_service']
-    time = timezone.now()
-    user.date_joined = time
-    user.date_last_seen = time
-    if token is not None:
-        user.populate_with_fb_info(token)
-
-    user.save()
-
-    response = jsonpickle.encode(user, unpicklable=False)
-    return HttpResponse(content=response, mimetype="application/json")
-    
-def get_user(request, user_id):
-
-    try:
-        user = KartenUser.find_by_unique(user_id)
-    except KartenUser.DoesNotExist:
-        exception = KartenUserDoesNotExist(user_id)
-        return exception.http_response()
-    return HttpResponse(content=user.to_json(), mimetype="application/json")
-
-def update_user(request, user_id):
-
-    user = KartenUser.objects.get(id=user_id)
-    user_dict = request.GET
-    user.update_with_json(user_dict)
-    user.save()
-    return HttpResponse(content=user.to_json(), mimetype="application/json")
 
 def get_user_friends(request, user_id):
 
