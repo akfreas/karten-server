@@ -10,7 +10,7 @@ import couchdb
 from Karten.errors import *
 
 from Karten.json_utils import *
-from datetime import datetime
+from django.utils import timezone
 import couch_utils
 from CouchDBServerManager import couchdb_instance, unauthed_couch_url
 import re
@@ -30,7 +30,7 @@ class KartenUserManager(BaseUserManager):
 
     def create_superuser(self, username, password):
 
-        time_now = datetime.now()
+        time_now = timezone.now()
         user = self.create_user(
             username=username,
             password=password,
@@ -48,7 +48,7 @@ class KartenUserFriendRequest(models.Model):
     requesting_user = models.ForeignKey('KartenUser', related_name='friends_requested')
     accepting_user = models.ForeignKey('KartenUser', related_name='friend_requests')
     accepted = models.BooleanField(default=False)
-    date_accepted = models.DateTimeField()
+    date_accepted = models.DateTimeField(blank=True, null=True)
     
 class KartenUser(AbstractBaseUser):
 
@@ -203,7 +203,7 @@ class KartenStack(models.Model):
         return unauthed_couch_url() + self.couchdb_name
 
 
-from django.db.models.signals import post_save, pre_delete
+from django.db.models.signals import pre_save, post_save, pre_delete
 from django.dispatch import receiver
 from django.contrib.auth import get_user_model
 from rest_framework.authtoken.models import Token
@@ -235,4 +235,13 @@ def update_couchdb_password(sender, instance=None, created=False, **kwargs):
     if created is False:
         couchserver = couchdb_instance()
         couch_utils.change_user_password(couchserver, instance.user.username, instance.key)
+
+@receiver(pre_save, sender=KartenUserFriendRequest)
+def add_friend_to_list(sender, instance=None, created=False, **kwargs):
+
+    if instance.accepted is True:
+        acceptor = instance.accepting_user
+        accepted = instance.requesting_user
+        accepted.friends.add(acceptor)
+        accepted.save()
 
