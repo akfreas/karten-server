@@ -83,43 +83,11 @@ class KartenUserFriendsView(viewsets.ViewSet):
     serializer_class = KartenUserSerializer
     model = KartenUser
 
-    def get_queryset(self):
-        return KartenUser.objects.all()
-
-#probably should not have this api method, use friend requests instead
-    def create(self, request, user_id=None):
-
-        if int(user_id) is not self.request.user.id:
-            return Response(status=status.HTTP_403_FORBIDDEN)
-
-        try:
-            new_friend = KartenUser.objects.get(id=request.DATA)
-            self.request.user.friends.add(new_friend)
-            serialized_friend = self.serializer_class(new_friend)
-            return Response(serialized_friend.data, status=status.HTTP_201_CREATED) 
-        except KartenUser.DoesNotExist:
-            return Response(status=status.HTTP_404_NOT_FOUND)
-           
-   
-    def delete(self, request, user_id=None):
-
-        import pdb;pdb.set_trace()
-        if int(user_id) is not self.request.user.id:
-            return Response(status=status.HTTP_403_FORBIDDEN)
-
-        try:
-            removed_friend = KartenUser.objects.get(id=request.DATA)
-            self.request.user.friends.remove(removed_friend)
-            return Response(status=status.HTTP_200_OK)
-
-        except KartenUser.DoesNotExist:
-            return Response(status=status.HTTP_404_NOT_FOUND)
-    
     def list(self, request, user_id=None):
         try:
             user = KartenUser.objects.get(id=user_id)
             users = user.friends.all()
-            serializer = self.serializer_class(users)
+            serializer = self.serializer_class(users, many=True)
             return Response(serializer.data)
         except KartenUser.DoesNotExist:
             return Response(status=status.HTTP_404_NOT_FOUND)
@@ -131,11 +99,16 @@ class KartenUserFriendRequestView(viewsets.ViewSet):
 
     def create(self, request):
         try:
-            new_friend = KartenUser.objects.get(id=request.DATA)
-            friend_request = KartenUserFriendRequest(requesting_user=self.request.user.id,
-                    accepting_user=new_friend, accepted=False)
-            friend_request.save()
-            serialized_request = KartenFriendRequestSerializer(friend_request)
+            friends_requesting = request.DATA.getlist('user_ids')
+            new_requests = []
+            
+            for friend_user_id in friends_requesting:
+                new_friend = KartenUser.objects.get(id=friend_user_id)
+                friend_request = KartenUserFriendRequest(requesting_user=self.request.user,
+                        accepting_user=new_friend, accepted=False)
+                friend_request.save()
+                new_requests.append(friend_request)
+            serialized_request = KartenFriendRequestSerializer(new_requests, many=True)
             return Response(serialized_request.data, status=status.HTTP_201_CREATED)
         except KartenUser.DoesNotExist:
             return Response(status=status.HTTP_404_NOT_FOUND)
@@ -163,10 +136,10 @@ class KartenUserFriendAcceptView(viewsets.ViewSet):
         return Response(serialized_requests.data, status=status.HTTP_200_OK)
 
     @detail_route(methods=['post'])
-    def accept(self, request):
+    def accept(self, request, pk):
 
         try:
-            accepting_request = KartenUserFriendRequest.objects.get(id=self.request.data)
+            accepting_request = KartenUserFriendRequest.objects.get(id=pk)
             accepting_request.accepted = True
             accepting_request.save()
             return Response(status=status.HTTP_200_OK)
@@ -174,10 +147,10 @@ class KartenUserFriendAcceptView(viewsets.ViewSet):
             return Response(status=status.HTTP_404_NOT_FOUND)
 
     @detail_route(methods=['post'])
-    def deny(self, request):
+    def deny(self, request, pk):
 
         try:
-            denying_request = KartenUserFriendRequest.objects.get(id=self.request.data)
+            denying_request = KartenUserFriendRequest.objects.get(id=pk)
             denying_request.accepted = False
             denying_request.save()
             return Response(status=status.HTTP_200_OK)
@@ -186,40 +159,6 @@ class KartenUserFriendAcceptView(viewsets.ViewSet):
 
 
         
-
-
-def add_request_context(f):
-    def inner_def(request, *args, **kwargs):
-        query_dict = request.GET
-        f_globals = f.func_globals
-        if 'token' in query_dict.keys() and query_dict['token'] is not None:
-          f_globals['token'] = user_dict['token']
-        else:
-          f_globals['token'] = None
-
-        result = f(request, *args, **kwargs)
-        return result
-    return inner_def
-
-
-def get_user_friends(request, user_id):
-
-    user = KartenUser.objects.get(id=user_id)
-    return HttpResponse(conent=user.friends_to_json(), content="application/json")
-        
-
-def create_user_friend(request, user_id):
-    user = KartenUser.objects.get(id=user_id)
-    friend_json = request.body
-    friend = KartenUser.get_or_create(friend_json['id'])
-    friend.update_with_json(friend_json)
-
-    if facebook_token is not None:
-        friend.populate_with_fb_info(facebook_token)
-
-    return HttpResponse(content=friend.to_json(), mimetype="application/json")
-    
-
 
 def create_stack(request):
     
