@@ -25,7 +25,8 @@ class KartenFriendRequestSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = KartenUserFriendRequest
-        fields = ('requesting_user',
+        fields = ('id',
+                'requesting_user',
                 'accepting_user',
                 'accepted')
 
