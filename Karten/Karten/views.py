@@ -6,20 +6,18 @@ from datetime import datetime
 from django.utils import timezone
 
 from django.http import HttpResponseRedirect, HttpResponse
-from django.http import Http404
+from django.http import Http404, QueryDict
 
 
 from rest_framework import permissions
 from rest_framework import renderers
 from rest_framework import viewsets
-from rest_framework.decorators import link
 from rest_framework.response import Response
-from rest_framework.decorators import api_view
 from rest_framework.reverse import reverse
 from rest_framework.views import APIView
 from rest_framework import status
 from Karten.serializers import *
-from rest_framework.decorators import detail_route, list_route
+from rest_framework.decorators import detail_route, list_route, link, api_view, permission_classes
 
 import json
 import jsonpickle
@@ -57,7 +55,6 @@ class KartenStackViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         user = self.request.user
         return KartenStack.objects.filter(allowed_users=user)
-
     def pre_save(self, obj):
         obj.owner = self.request.user
 
@@ -93,23 +90,23 @@ class KartenUserFriendsView(viewsets.ViewSet):
             return Response(status=status.HTTP_404_NOT_FOUND)
 
 class KartenUserFriendRequestView(viewsets.ViewSet):
-
-    
+   
     permission_classes = (permissions.IsAuthenticated,)
 
     def create(self, request):
         try:
             friends_requesting = request.DATA.getlist('user_ids')
             new_requests = []
-            
-            for friend_user_id in friends_requesting:
-                new_friend = KartenUser.objects.get(id=friend_user_id)
+            new_friends = KartenUser.objects.filter(id__in=friends_requesting)
+            for new_friend in new_friends:
                 friend_request = KartenUserFriendRequest(requesting_user=self.request.user,
                         accepting_user=new_friend, accepted=False)
                 friend_request.save()
                 new_requests.append(friend_request)
             serialized_request = KartenFriendRequestSerializer(new_requests, many=True)
             return Response(serialized_request.data, status=status.HTTP_201_CREATED)
+        except ValueError:
+            return Response(status=status.HTTP_400_BAD_REQUEST)
         except KartenUser.DoesNotExist:
             return Response(status=status.HTTP_404_NOT_FOUND)
 
