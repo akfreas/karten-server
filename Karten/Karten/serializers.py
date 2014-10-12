@@ -7,7 +7,6 @@ class KartenUserSerializer(serializers.HyperlinkedModelSerializer):
     external_user_id = serializers.CharField(required=False)
     external_service = serializers.CharField(required=False)
 
-
     class Meta:
         model = KartenUser
         fields = ('id',
@@ -18,7 +17,10 @@ class KartenUserSerializer(serializers.HyperlinkedModelSerializer):
                 'date_joined',
                 'first_name',
                 'last_name',
+                'email'
                 )
+        read_only_fields = ('id',
+                            'date_joined')
         write_only_fields = ('password',)
 
 class KartenFriendRequestSerializer(serializers.ModelSerializer):
