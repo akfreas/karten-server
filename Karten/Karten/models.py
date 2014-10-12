@@ -208,6 +208,13 @@ from django.dispatch import receiver
 from django.contrib.auth import get_user_model
 from rest_framework.authtoken.models import Token
 
+@receiver(post_save, sender=KartenStack)
+def add_owner_to_allowed_users(sender, instance=None, created=False, *args, **kwargs):
+    if created is True:
+        instance.allowed_users.add(instance.owner)
+        instance.save()
+
+
 @receiver(pre_delete, sender=KartenStack)
 def pre_delete_db(sender, instance, signal, *args, **kwargs):
 
