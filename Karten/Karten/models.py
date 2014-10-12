@@ -42,14 +42,7 @@ class KartenUserManager(BaseUserManager):
 
         user.save(using=self._db)
         return user
-
-class KartenUserFriendRequest(models.Model):
-
-    requesting_user = models.ForeignKey('KartenUser', related_name='friends_requested')
-    accepting_user = models.ForeignKey('KartenUser', related_name='friend_requests')
-    accepted = models.BooleanField(default=False)
-    date_accepted = models.DateTimeField(blank=True, null=True)
-    
+   
 class KartenUser(AbstractBaseUser):
 
     class Meta:
@@ -68,8 +61,6 @@ class KartenUser(AbstractBaseUser):
     email = models.EmailField(
         verbose_name='email address',
         max_length=255,
-        null=True,
-        blank=True,
         unique=True,
         db_index=True,
     )
@@ -135,6 +126,13 @@ class KartenUser(AbstractBaseUser):
     def is_staff(self, value):
         self.is_admin = value
 
+class KartenUserFriendRequest(models.Model):
+
+    requesting_user = models.ForeignKey('KartenUser', related_name='friends_requested')
+    accepting_user = models.ForeignKey('KartenUser', related_name='friend_requests')
+    accepted = models.BooleanField(default=False)
+    date_accepted = models.DateTimeField(blank=True, null=True)
+ 
 
 class KartenCouchServer(models.Model):
     server_url = models.URLField(max_length=255)
