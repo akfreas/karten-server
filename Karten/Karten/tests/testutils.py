@@ -4,11 +4,14 @@ import string
 from django.db.models.signals import post_save
 
 def rnd():
-    return ''.join(random.choice(string.ascii_uppercase + string.digits) for _ in range(random.randrange(4, 12)))
+    return ''.join(random.choice(string.ascii_lowercase + string.digits) for _ in range(random.randrange(4, 12)))
+
+def random_email():
+    return "%s@%s.com" % (rnd(), rnd())
 
 def create_user(username, password):
 
-    new_user = KartenUser(username=username, date_joined=timezone.now())
+    new_user = KartenUser(username=username, date_joined=timezone.now(), email=random_email())
     new_user.save()
     new_user.set_password(password)
     new_user.save()
