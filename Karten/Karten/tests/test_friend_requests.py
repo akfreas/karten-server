@@ -7,35 +7,12 @@ import string
 import random
 from datetime import datetime
 from django.utils import timezone
-from django.db.models.signals import post_save
 from Karten.models import create_auth_token, update_couchdb_password
+from Karten.tests.testutils import *
 from rest_framework.authtoken.models import Token
 
 test_username = "test11"
 test_password = "password"
-
-def rnd():
-    return ''.join(random.choice(string.ascii_uppercase + string.digits) for _ in range(random.randrange(4, 12)))
-
-
-def create_user(username, password):
-
-    new_user = KartenUser(username=username, date_joined=timezone.now())
-    new_user.save()
-    new_user.set_password(password)
-    new_user.save()
-    return new_user
-
-def create_dummy_users():
-    
-    users = []
-    for i in range(10):
-        new_user = KartenUser(username=rnd(), date_joined=timezone.now())
-        new_user.set_password("password")
-        new_user.save()
-        users.append(new_user)
-
-    return users
 
 class FriendRequestTestCase(TestCase):
 
@@ -74,6 +51,27 @@ class FriendRequestTestCase(TestCase):
             self.assertEqual(matching_request['accepted'], False)
             self.assertEqual(matching_request['requesting_user'], self.current_user.id)
         self.remove_friend_requests()
+
+    def test_add_nonexistent_friend(self):
+ 
+        request_dict = {'user_ids' : ''}
+        response = self.client.post("/friends/requests/outgoing/", request_dict)
+        self.assertEqual(response.status_code, 400)
+
+    def test_add_friend_invalid_id(self):
+ 
+        first_friend = self.friends[0]
+        request_dict = {'user_ids' : [2323490, '999999']}
+        response = self.client.post("/friends/requests/outgoing/", request_dict)
+        no_friends = json.loads(response.content)
+
+        self.assertEqual(response.status_code, 201)
+        self.assertEqual(len(no_friends), 0)
+
+    def test_accept_friend_request_invalid_id(self):
+
+        bad_request = self.client.post("/friends/requests/incoming/98089/accept/")
+        self.assertEqual(bad_request.status_code, 404)
 
     def test_accept_friend_request(self):
 
@@ -135,16 +133,4 @@ class FriendRequestTestCase(TestCase):
 
             user_friends = json.loads(new_client.get("/user/%s/friends/" % user.id).content)
             self.assertEqual(len(user_friends), 0)
-
-
-
-
-
-
-
-
-
-
-        
-
 
