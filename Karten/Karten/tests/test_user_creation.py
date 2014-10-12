@@ -2,9 +2,14 @@ from django.test import TestCase, Client
 from Karten.models import KartenUser
 from Karten.settings import *
 from Karten.errors import *
+from Karten.serializers import *
 import json
 import string
 import random
+from testutils import *
+
+from rest_framework.parsers import JSONParser
+from rest_framework.renderers import JSONRenderer
 
 def rnd():
     return ''.join(random.choice(string.ascii_uppercase + string.digits) for _ in range(random.randrange(4, 12)))
@@ -18,78 +23,85 @@ class UserCreationTestCase(TestCase):
 
     def setUp(self):
         self.client = Client()
+        disconnect_couchdb_signals()
+
+    def valid_user_dict(self):
+        data_dict = {'first_name' : 'Big', 
+                     'last_name' : 'Pig',
+                     'username' : 'bigpig',
+                     'password' : 'password',
+                     'email' : 'big@pig.com'}
+        return data_dict
 
     def test_user_creation(self):
-        data_dict = {'first_name' : 'Big', 'last_name' : 'Pig'}
-        response = self.client.get("/user/create", data_dict)
+        data_dict = self.valid_user_dict()
+        response = self.client.post("/users/", data_dict)
         resp_json = json.loads(response.content)
         filtered_keys = [k for k in resp_json.keys() if k in data_dict.keys()]
-        self.assertEqual(len(filtered_keys), len(data_dict.keys()))
         for key in filtered_keys:
             self.assertEqual(data_dict[key], resp_json[key])
 
+        new_client = Client()
+        new_client.login(username=data_dict['username'], password=data_dict['password'])
+        self.assertIsNotNone(new_client.session.get('_auth_user_hash'))
         
     def test_user_creation_error(self):
-        data_dict = {'first_name' : 'Big', 'last_name' : 'Pig', 'external_user_id' : '1', 'external_service' : 'fb'}
-        response = self.client.get("/user/create", data_dict)
-        error_response = self.client.get("/user/create", data_dict)
+        data_dict = {'first_name' : 'Big', 
+                     'last_name' : 'Pig', 
+                     'external_user_id' : '1', 
+                     'external_service' : 'fb'}
+        error_response = self.client.post("/users/", data_dict)
+        missing_fields = ['username', 'email', 'password']
         resp_json = json.loads(error_response.content)
-        expected_error = KartenUserAlreadyExists(data_dict['external_user_id'])
-        self.assertEqual(resp_json['error_code'], expected_error.error_code)
-        self.assertEqual(resp_json['info']['message'], expected_error.message)
+        self.assertEqual(len(missing_fields), len(resp_json))
+        for error_field in resp_json.keys():
+            self.assertTrue(error_field in missing_fields)
 
-    def test_add_users_and_user_list(self):
-        user_dicts = {}
-        for i in range(0, 100):
-            user_dict = {'first_name' : "fnm" + rnd(), 
-                'last_name' : "lnm" + rnd(),
-                'external_service' : "exts" + rnd(),
-                'external_user_id' : "extid" + rnd()
-                }
-            response = self.client.get("/user/create", user_dict)
-            self.assertEqual(200, response.status_code)
-            response_json = json.loads(response.content)
-            user_dicts[response_json['id']] = user_dict
-        users_response = self.client.get("/users") 
-        user_list = json.loads(users_response.content)
-        for user in user_list:
-            expected_user = user_dicts[user['id']]
+    def test_invalid_email(self):
+        data_dict = self.valid_user_dict()
+        data_dict['email'] = rnd()
 
-            for key in expected_user.keys():
-                self.assertEqual(expected_user[key], user[key], \
-                        "value for key %s does not match in returned dict. %s != %s. ID: %i" % (key, expected_user, user_dict, user['id']))
+        response = self.client.post('/users/', data_dict)
+        errors = json.loads(response.content) 
+        
+        self.assertIsNotNone(errors['email']) 
+        self.assertEqual(len(errors['email']), 1)
+        self.assertEqual(len(errors.keys()), 1)
 
-        write_json_data("UserListFetch", users_response.content)
+    def test_duplicate_email_and_username(self):
+        data_dict = self.valid_user_dict()
 
-        for user_id in user_dicts.keys():
-            expected_user = user_dicts[user_id]
-            response_json = json.loads(self.client.get("/user/%s" % user_id).content)
- 
-            for key in expected_user.keys():
-                self.assertEqual(expected_user[key], response_json[key], \
-                        "value for key %s does not match in returned dict from user get. %s != %s. ID: %i" % (key, expected_user, user_dict, user['id']))
+        response1 = self.client.post('/users/', data_dict)
+        response2 = self.client.post('/users/', data_dict)
+        errors = json.loads(response2.content) 
+        self.assertIsNotNone(errors['email']) 
+        self.assertEqual(len(errors['email']), 1)
+
+        self.assertIsNotNone(errors['username']) 
+        self.assertEqual(len(errors['username']), 1)
+        self.assertEqual(len(errors.keys()), 2)
+
+    def test_user_list(self):
+        response = self.client.get('/users/')
+        self.assertEqual(response.status_code, 404)
 
     def test_user_update(self):
-        user_dict = {'first_name' : "fnm" + rnd(), 
-                'last_name' : "lnm" + rnd(),
-                'external_service' : "exts" + rnd(),
-                'external_user_id' : "extid" + rnd()
-                }
-        response = self.client.get("/user/create", user_dict)
-        self.assertEqual(200, response.status_code)
-        response_json = json.loads(response.content)
-        user_dict['id'] = response_json['id']
-        
+        user = create_user(username=rnd(), password="password")
 
-        for key in ['first_name', 'last_name']:
-            if key is 'id':
-                continue
-            new_value = rnd()
-            update_dict = {key : new_value}
-            url = "/user/%i/update" % user_dict['id']
-            response = self.client.get(url, update_dict)
-            response_json = json.loads(response.content)
-            self.assertEqual(new_value, response_json[key])
+        user.first_name = rnd()
+        user.save()
+        serialized_user = KartenUserSerializer(user)
+        new_client = Client()
+        new_client.login(username=user.username, password="password")
+        update_dict = {'first_name' : 'test111'}
+        data = JSONRenderer().render(update_dict) 
+
+        user_update = new_client.put("/users/me/", data) 
+        self.assertEqual(user_update.status_code, 202)
+        response = new_client.get("/users/me/")
+        updated_user = response.data 
+        self.assertEqual(update_dict['first_name'], updated_user['first_name'])
+        
 
 class DatabaseTests(TestCase):
 
