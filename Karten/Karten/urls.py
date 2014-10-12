@@ -19,11 +19,6 @@ urlpatterns = patterns('Karten.views',
     url(r'^stacks/(?P<stack_id>\w+)/share', views.share_stack),
     url(r'^users/me', views.KartenCurrentUserView.as_view()),
     url(r'^users/search', views.user_search),
-    ## Below: to be deleted!
-
-
-    url(r'^stack/(?P<stack_id>\w+)/user/(?P<user_id>\w+)/delete', 'remove_user_from_stack'),
-    url(r'^stack/(?P<stack_id>\w+)/users/all', 'get_all_users_for_stack'),
     url(r'^admin/', include(admin.site.urls)),
 )
 
