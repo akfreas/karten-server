@@ -21,16 +21,26 @@ from rest_framework.decorators import detail_route, list_route, link, api_view, 
 
 import json
 import jsonpickle
-from jsonpickle.pickler import Pickler
+from rest_framework.parsers import JSONParser
 
 class KartenUserViewSet(viewsets.ModelViewSet):
 
     queryset = KartenUser.objects.all()
     serializer_class = KartenUserSerializer
+    permission_classes = (permissions.AllowAny,)
+
+    def update(self, reqeust):
+        return Response(status=status.HTTP_404_NOT_FOUND)
+
+    def delete(self, request):
+        return Response(status=status.HTTP_404_NOT_FOUND)
+
+    def list(self, request):
+        return Response(status=status.HTTP_404_NOT_FOUND)
 
     def retrieve(self, request, pk=None):
         user = self.get_object()
-        user.date_last_seen = datetime.now()
+        user.date_last_seen = timezone.now()
         user.save()
         serializer = KartenUserSerializer(user)
         return Response(serializer.data, status=status.HTTP_200_OK)
@@ -40,7 +50,7 @@ class KartenUserViewSet(viewsets.ModelViewSet):
         if user_serializer.is_valid():
             new_user = user_serializer.object
             new_user.set_password(new_user.password)
-            time_now = datetime.now()
+            time_now = timezone.now()
             new_user.date_joined = time_now
             new_user.date_last_seen = time_now
             user_serializer.save()
@@ -69,9 +79,19 @@ class KartenCurrentUserView(APIView):
     model = KartenUser
 
     def get(self, request, format=None):
-        user = self.request.user
+        user = request.user
         user_serializer = self.serializer_class(user)
         return Response(user_serializer.data)
+
+    def put(self, request):
+
+        update_dict = JSONParser().parse(request)
+        updated_user = KartenUserSerializer(request.user, data=update_dict, partial=True)
+        if updated_user.is_valid():
+            updated_user.save()
+            return Response(updated_user.data, status=status.HTTP_202_ACCEPTED)
+        else:
+            return Response(status=status.HTTP_400_BAD_REQUEST)
 
 
 
@@ -181,7 +201,7 @@ def share_stack(request, stack_id):
         return Response(serialized_allowed_users.data, status=status.HTTP_201_CREATED)
     elif request.method == 'DELETE':
         try:
-            user_dict = json.loads(request.body)
+            user_dict = JSONParser().parse(request)
             user_list = user_dict['user_ids']
         except ValueError:
             return Response(status=status.HTTP_400_BAD_REQUEST)
