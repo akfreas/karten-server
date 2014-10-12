@@ -57,7 +57,7 @@ class KartenUserAdmin(UserAdmin):
 
     list_filter = ('is_admin',)
     fieldsets = (
-            (None, {'fields' : ('first_name', 'last_name', 'email',)}),
+            (None, {'fields' : ('first_name', 'last_name', 'email', 'friends')}),
             ('Permissions info', {'fields' : ('is_admin',)}),
             ('Important dates', {'fields' : ('last_login',)}),
         )
