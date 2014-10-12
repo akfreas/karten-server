@@ -16,11 +16,9 @@ router.register(r'friends/requests/outgoing', views.KartenUserFriendRequestView,
 router.register(r'friends/requests/incoming', views.KartenUserFriendAcceptView, base_name='incoming_requests')
 
 urlpatterns = patterns('Karten.views',
-    url(r'^stacks/(?P<stack_id>\w+)/user/(?P<user_id>\w+)/add', 'add_user_to_stack'),
+    url(r'^stacks/(?P<stack_id>\w+)/share', views.share_stack),
     url(r'^users/me', views.KartenCurrentUserView.as_view()),
-#    url(r'friends/requests/outgoing', views.KartenUserFriendRequestView.as_view()),
-#    url(r'friends/requests/incoming', views.KartenUserFriendAcceptView.as_view()),
-
+    url(r'^users/search', views.user_search),
     ## Below: to be deleted!
 
 
