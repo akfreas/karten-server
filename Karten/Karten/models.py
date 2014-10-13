@@ -162,7 +162,7 @@ class KartenStack(models.Model):
     name = models.CharField(max_length=100)
     description = models.CharField(max_length=255, null=True, blank=True)
     allowed_users = models.ManyToManyField('KartenUser', related_name='stacks')
-    creation_date = models.DateField()
+    creation_date = models.DateTimeField()
 
     def delete(self, *args, **kwargs):
         try:
@@ -178,6 +178,7 @@ class KartenStack(models.Model):
 
         if (self.couchdb_name is None or len(self.couchdb_name) is 0) and self.id is None:
             couchserver = couchdb_instance()
+            self.creation_date = timezone.now()
             try:
                 formatted_db_name = re.sub(r'[^\w]', '_', self.name.lower())
                 formatted_db_name += ("_%s" % self.owner.username)
