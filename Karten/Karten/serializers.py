@@ -56,5 +56,6 @@ class KartenStackSerializer(serializers.ModelSerializer):
                 'description',
                 'allowed_users',
                 'creation_date')
-        read_only_fields = ('couchdb_name',)
+        read_only_fields = ('couchdb_name',
+                            'creation_date')
 
