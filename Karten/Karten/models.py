@@ -218,7 +218,7 @@ def update_allowed_users_on_couchdb(sender, instance, action=None, pk_set=None, 
 
 @receiver(post_save, sender=KartenStack)
 def add_owner_to_allowed_users(sender, instance=None, created=False, *args, **kwargs):
-    if created is True:
+    if instance.owner not in instance.allowed_users.all():
         instance.allowed_users.add(instance.owner)
         instance.save()
 

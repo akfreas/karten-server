@@ -9,6 +9,7 @@ from datetime import datetime
 from django.utils import timezone
 from django.db.models.signals import post_save
 from rest_framework.authtoken.models import Token
+from rest_framework.renderers import JSONRenderer
 
 from Karten.tests.testutils import *
 
@@ -33,15 +34,15 @@ class UserShareStackTestCase(TestCase):
     def test_share_stack(self):
     
         share_users = create_dummy_users(count=10)
-        user_ids = [u.id for u in share_users]
-        share_user_dict = {'user_ids' : user_ids}
-        share_response = self.client.post("/stacks/%s/share/" % self.stack.id, share_user_dict)
+        user_ids = [u.id for u in share_users] + [self.owner.id]
+        share_user_dict = JSONRenderer().render({"allowed_users" : user_ids})
+        share_response = self.client.post("/stacks/%s/share/" % self.stack.id, share_user_dict, content_type="application/json")
         self.assertEqual(share_response.status_code, 201)
 
         stack = json.loads(self.client.get("/stacks/%s/" % self.stack.id).content)
+
         allowed_users = stack['allowed_users']
         is_true = [x for x in user_ids if x in allowed_users]
-        is_true += [self.stack.owner.id]
 
         self.assertEqual(len(allowed_users), len(is_true))
         
@@ -49,37 +50,23 @@ class UserShareStackTestCase(TestCase):
 
         share_users = create_dummy_users(count=10)
         user_ids = [u.id for u in share_users]
-        share_user_dict = {'user_ids' : user_ids}
-        share_response = self.client.post("/stacks/%s/share/" % self.stack.id, share_user_dict)
+        share_user_dict = JSONRenderer().render({'allowed_users' : user_ids})
+        share_response = self.client.post("/stacks/%s/share/" % self.stack.id, share_user_dict, content_type="application/json")
         self.assertEqual(share_response.status_code, 201)
         subtracted_users = user_ids[::5]
-        unshare_user_dict = {"user_ids" : subtracted_users}
-        unshare_response = self.client.delete("/stacks/%s/share/" % self.stack.id, json.dumps(unshare_user_dict), content_type="application/json")
+        unshare_user_dict = {"allowed_users" : subtracted_users}
+        unshare_response = self.client.post("/stacks/%s/share/" % self.stack.id, json.dumps(unshare_user_dict), content_type="application/json")
 
-        self.assertEqual(unshare_response.status_code, 200)
+        self.assertEqual(unshare_response.status_code, 201)
 
-        unsubtracted_users = [u for u in user_ids if u not in subtracted_users]
-        unsubtracted_users += [self.owner.id]
-        unsubtracted_users.sort()
         users_from_response = json.loads(unshare_response.data)
+        subtracted_users += [self.owner.id]
         users_from_response.sort()
+        subtracted_users.sort()
+        self.assertEqual(len(subtracted_users), len(users_from_response))
 
-        self.assertEqual(len(unsubtracted_users), len(users_from_response))
-
-        for i in range(len(unsubtracted_users)):
-            user1 = unsubtracted_users[i]
+        for i in range(len(subtracted_users)):
+            user1 = subtracted_users[i]
             user2 = users_from_response[i]
             self.assertEqual(user1, user2)
         
-
-
-        
-
-
-        
-         
-
-
-
-
-

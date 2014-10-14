@@ -185,7 +185,7 @@ def user_search(request):
     serialized_matches = KartenUserSerializer(matching_users, many=True)
     return Response(serialized_matches.data, status=status.HTTP_200_OK)
 
-@api_view(['POST', 'DELETE'])
+@api_view(['POST'])
 @permission_classes((permissions.IsAuthenticated,))
 def share_stack(request, stack_id):
     stack = KartenStack.objects.get(id=stack_id)
@@ -193,22 +193,15 @@ def share_stack(request, stack_id):
         return Response(status=status.HTTP_403_FORBIDDEN)
     try:
         user_dict = JSONParser().parse(request)
-        user_list = user_dict['user_ids']
+        allowed_user_list = user_dict['allowed_users']
     except ValueError:
         return Response(status=status.HTTP_400_BAD_REQUEST)
     
-    user_objs = KartenUser.objects.filter(id__in=user_list)
+    user_objs = KartenUser.objects.filter(id__in=allowed_user_list)
 
-    if request.method == 'POST':
-        stack.allowed_users.add(*user_objs)
-        stack.save()
-        serialized_allowed_users = KartenUserSerializer(stack.allowed_users.all(), many=True)
-        return Response(serialized_allowed_users.data, status=status.HTTP_201_CREATED)
-    elif request.method == 'DELETE':
-        stack.allowed_users.remove(*user_objs)
-        stack.save()
-        new_allowed_users = KartenUserSerializer(stack.allowed_users.all(), many=True)
-        allowed_user_ids =  [u.id for u in stack.allowed_users.all()]
-
-        return Response(json.dumps(allowed_user_ids), status=status.HTTP_200_OK)
-
+    stack.allowed_users.clear()
+    stack.allowed_users.add(*user_objs)
+    stack.save()
+    user_ids = [user.id for user in stack.allowed_users.all()]
+    serialized_allowed_users = json.dumps(user_ids)
+    return Response(serialized_allowed_users, status=status.HTTP_201_CREATED)
