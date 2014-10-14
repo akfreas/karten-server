@@ -202,10 +202,19 @@ class KartenStack(models.Model):
         return unauthed_couch_url() + self.couchdb_name
 
 
-from django.db.models.signals import pre_save, post_save, pre_delete
+from django.db.models.signals import pre_save, post_save, pre_delete, m2m_changed
 from django.dispatch import receiver
 from django.contrib.auth import get_user_model
 from rest_framework.authtoken.models import Token
+
+@receiver(m2m_changed, sender=KartenStack.allowed_users.through)
+def update_allowed_users_on_couchdb(sender, instance, action=None, pk_set=None, *args, **kwargs):
+
+    if action == 'pre_add':
+        allowed_users = KartenUser.objects.filter(id__in=pk_set)
+        usernames = [u.username for u in allowed_users]
+        couchserver = couchdb_instance()
+        couch_utils.set_users_on_db(couchserver, instance.couchdb_name, usernames)
 
 @receiver(post_save, sender=KartenStack)
 def add_owner_to_allowed_users(sender, instance=None, created=False, *args, **kwargs):

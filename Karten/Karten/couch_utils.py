@@ -17,8 +17,15 @@ def create_couch_user(server, new_username, user_password):
     except couchdb.ResourceConflict:
         return None
 
-def add_user_to_db(server, db_name, username):
-    pass
+def set_users_on_db(server, db_name, usernames):
+    
+    new_db = server[db_name]
+    security_resource = new_db.resource("_security")
+
+    permissions_dict = security_resource.get_json()[2]
+    permissions_dict['members']['names'] = usernames
+    result = security_resource.put(body=json.dumps(permissions_dict))
+    return result
 
 def create_db_for_user(server, db_name, username):
     
