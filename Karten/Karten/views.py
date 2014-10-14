@@ -191,22 +191,21 @@ def share_stack(request, stack_id):
     stack = KartenStack.objects.get(id=stack_id)
     if stack.owner.id is not request.user.id:
         return Response(status=status.HTTP_403_FORBIDDEN)
+    try:
+        user_dict = JSONParser().parse(request)
+        user_list = user_dict['user_ids']
+    except ValueError:
+        return Response(status=status.HTTP_400_BAD_REQUEST)
+    
+    user_objs = KartenUser.objects.filter(id__in=user_list)
 
     if request.method == 'POST':
-        share_user_ids = request.POST.getlist('user_ids')
-        share_users = KartenUser.objects.filter(id__in=share_user_ids)
-        stack.allowed_users.add(*share_users)
+        stack.allowed_users.add(*user_objs)
         stack.save()
-        serialized_allowed_users = KartenUserSerializer(share_users, many=True)
+        serialized_allowed_users = KartenUserSerializer(stack.allowed_users.all(), many=True)
         return Response(serialized_allowed_users.data, status=status.HTTP_201_CREATED)
     elif request.method == 'DELETE':
-        try:
-            user_dict = JSONParser().parse(request)
-            user_list = user_dict['user_ids']
-        except ValueError:
-            return Response(status=status.HTTP_400_BAD_REQUEST)
-        
-        stack.allowed_users.remove(*user_list)
+        stack.allowed_users.remove(*user_objs)
         stack.save()
         new_allowed_users = KartenUserSerializer(stack.allowed_users.all(), many=True)
         allowed_user_ids =  [u.id for u in stack.allowed_users.all()]
