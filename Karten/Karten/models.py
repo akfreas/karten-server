@@ -210,7 +210,7 @@ from rest_framework.authtoken.models import Token
 @receiver(m2m_changed, sender=KartenStack.allowed_users.through)
 def update_allowed_users_on_couchdb(sender, instance, action=None, pk_set=None, *args, **kwargs):
 
-    if action == 'pre_add':
+    if action == 'post_add':
         allowed_users = KartenUser.objects.filter(id__in=pk_set)
         usernames = [u.username for u in allowed_users]
         couchserver = couchdb_instance()
