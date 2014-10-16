@@ -67,6 +67,7 @@ class KartenUser(AbstractBaseUser):
 
     external_user_id = models.CharField(max_length=255, null=True, blank=True)
     external_service = models.CharField(max_length=20, null=True, blank=True)
+    profile_pic_url = models.URLField(blank=True, null=True)
     date_joined = models.DateTimeField(null=True, blank=True)
     date_last_seen = models.DateTimeField(null=True, blank=True)
     first_name = models.CharField(max_length=100, blank=True, null=True)
