@@ -223,12 +223,11 @@ def add_owner_to_allowed_users(sender, instance=None, created=False, *args, **kw
         instance.allowed_users.add(instance.owner)
         instance.save()
 
-
 @receiver(pre_delete, sender=KartenStack)
 def pre_delete_db(sender, instance, signal, *args, **kwargs):
 
     try:
-        server = couchdb.Server(instance.couchdb_server)
+        server = couchdb_instance()
         server.delete(instance.couchdb_name)
     except couchdb.ResourceNotFound:
         e = KartenCouchDBException(message=_("The database you are trying to delete does not exist."),\
